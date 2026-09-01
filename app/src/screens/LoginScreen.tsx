@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
@@ -22,7 +22,6 @@ export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, in
   const [remember, setRemember] = useState(false);
   const [show, setShow] = useState(false);
   const [error, setError] = useState(initialError);
-  const [showGoogle, setShowGoogle] = useState(false);
   const float = React.useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(
@@ -33,19 +32,56 @@ export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, in
     ).start();
   }, []);
 
-  const GOOGLE_ID = '1080000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com';
-  const isPlaceholder = GOOGLE_ID.includes('xxxx');
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({ clientId: GOOGLE_ID });
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const configuredClientId =
+    Platform.OS === 'ios'
+      ? googleIosClientId
+      : Platform.OS === 'android'
+        ? googleAndroidClientId
+        : googleWebClientId;
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    webClientId: googleWebClientId,
+    iosClientId: googleIosClientId,
+    androidClientId: googleAndroidClientId,
+  });
+
   useEffect(() => {
-    if (response?.type === 'success') onGoogleLogin?.('google.user@gmail.com');
-  }, [response]);
+    if (response?.type !== 'success') return;
+    const idToken = response.params?.id_token;
+    if (!idToken) {
+      setError('Google tidak mengirimkan token identitas. Silakan coba kembali.');
+      return;
+    }
+
+    try {
+      const payload = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const profile = JSON.parse(atob(payload));
+      if (!profile.email || profile.email_verified === false) {
+        setError('Email Google belum terverifikasi.');
+        return;
+      }
+      setError('');
+      onGoogleLogin?.(String(profile.email).trim().toLowerCase());
+    } catch {
+      setError('Profil Google tidak dapat dibaca. Silakan coba kembali.');
+    }
+  }, [response, onGoogleLogin]);
 
   const handleGoogle = async () => {
-    if (isPlaceholder) { setShowGoogle(true); return; }
-    try { const r = await promptAsync(); if (r?.type === 'success') return; } catch {}
-    setShowGoogle(true);
+    if (!configuredClientId) {
+      setError('Login Google belum dikonfigurasi. Tambahkan Google OAuth Client ID pada environment aplikasi.');
+      return;
+    }
+    if (!request) {
+      setError('Login Google sedang disiapkan. Silakan coba beberapa saat lagi.');
+      return;
+    }
+    setError('');
+    await promptAsync();
   };
-  const pickGoogle = (em: string) => { setShowGoogle(false); onGoogleLogin?.(em); };
 
   const handle = () => {
     if (!email.includes('@') || password.length < 6) {
@@ -129,29 +165,6 @@ export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, in
         </View>
       </ScrollView>
 
-      {showGoogle && (
-        <View style={styles.sheetOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowGoogle(false)} />
-          <View style={styles.sheet}>
-            <View style={styles.gSheetHeader}>
-              <Text style={styles.gLogo}>G</Text>
-              <Text style={styles.gTitle}>Sign in with Google</Text>
-            </View>
-            <Text style={styles.gShop}>Choose an account</Text>
-            <Text style={styles.gSub}>to continue to BabyOps</Text>
-            <View style={styles.gRealInfo}>
-              <Ionicons name="shield-checkmark" size={18} color={colors.success} />
-              <Text style={styles.gRealText}>Akan membuka halaman asli Google (accounts.google.com) — akun yang tampil adalah akun Google di perangkat/browsers kamu, bukan daftar hardcoded.</Text>
-            </View>
-            <Pressable style={[styles.googleBtn, { marginTop: 12 }]} onPress={() => pickGoogle('google.user@gmail.com')}>
-              <Text style={styles.googleG}>G</Text>
-              <Text style={styles.googleText}>Lanjutkan dengan Google</Text>
-            </Pressable>
-            <Text style={styles.gHint}>Mode demo: karena Client ID belum diisi, login akan mock. Isi GOOGLE_ID di LoginScreen untuk pakai akun Google asli.</Text>
-            <Pressable style={styles.sheetCancel} onPress={() => setShowGoogle(false)}><Text style={styles.sheetCancelText}>Batal</Text></Pressable>
-          </View>
-        </View>
-      )}
     </LinearGradient>
   );
 }
