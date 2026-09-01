@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   label: { color: '#1A2B4A', fontSize: 14, fontWeight: '800', marginTop: 2 },
   pill: { flexDirection: 'row', alignItems: 'center', height: 48, borderRadius: 24, borderWidth: 1, borderColor: '#E6EDF3', paddingHorizontal: 14, gap: 10, shadowColor: '#0A3A5A', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
   pillIcon: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#EAF0F7', alignItems: 'center', justifyContent: 'center' },
-  input: { flex: 1, color: colors.ink, fontSize: 13 },
+  input: { flex: 1, color: colors.ink, fontSize: 13, borderWidth: 0, outlineWidth: 0 } as any,
   hint: { color: colors.muted, fontSize: 11, lineHeight: 16 },
   info: { color: colors.primary, fontSize: 11, lineHeight: 16 },
   error: { color: colors.danger, fontSize: 12 },

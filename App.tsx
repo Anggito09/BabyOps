@@ -11,7 +11,6 @@ import { EducationScreen } from './src/screens/EducationScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
-import { CompleteProfileScreen } from './src/screens/CompleteProfileScreen';
 import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
 import { BottomNav, TabKey } from './src/components/BottomNav';
 import { colors } from './src/theme/tokens';
@@ -35,7 +34,6 @@ type Route =
   | { name: 'login' }
   | { name: 'register' }
   | { name: 'forgot' }
-  | { name: 'completeProfile'; email: string; initialName: string }
   | { name: 'main'; tab: TabKey }
   | { name: 'record' }
   | { name: 'result'; prediction: CryPrediction };
@@ -89,13 +87,12 @@ export default function App() {
   const handleLogin = async (email: string, password: string) => {
     const dbUser = await DB.findUserByEmail(email);
     if (!dbUser) {
-      // akun belum terdaftar — arahkan daftar dulu
       setLoginError('Akun tidak ditemukan. Silakan Sign Up terlebih dahulu.');
       setRoute({ name: 'login' });
       return;
     }
-    if (dbUser.provider === 'email' && dbUser.password && dbUser.password !== password) {
-      setLoginError('Password salah. Coba lagi atau gunakan Google.');
+    if (dbUser.password && dbUser.password !== password) {
+      setLoginError('Password salah. Coba lagi.');
       setRoute({ name: 'login' });
       return;
     }
@@ -103,36 +100,7 @@ export default function App() {
     setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob });
     const h = await DB.loadHistory(dbUser.email);
     setHistory(h);
-    if (dbUser.provider === 'google' && !dbUser.babyDob) {
-      setRoute({ name: 'completeProfile', email: dbUser.email, initialName: dbUser.name });
-    } else {
-      goMain('home');
-    }
-  };
-
-  const handleGoogleLogin = async (googleEmail: string) => {
-    let dbUser = await DB.findUserByEmail(googleEmail);
-    if (!dbUser) {
-      dbUser = {
-        id: String(Date.now()),
-        name: googleEmail.split('@')[0],
-        email: googleEmail.toLowerCase(),
-        provider: 'google',
-        createdAt: new Date().toISOString(),
-      };
-      await DB.upsertUser(dbUser);
-      await emailService.sendWelcome(dbUser.email, dbUser.name, 'google');
-    }
-    await DB.setCurrentEmail(dbUser.email);
-    if (!dbUser.babyDob) {
-      setUser({ name: dbUser.name, email: dbUser.email });
-      setRoute({ name: 'completeProfile', email: dbUser.email, initialName: dbUser.name });
-    } else {
-      setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob });
-      const h = await DB.loadHistory(dbUser.email);
-      setHistory(h);
-      goMain('home');
-    }
+    goMain('home');
   };
 
   const handleRegister = async (name: string, email: string, babyDob: string) => {
@@ -158,20 +126,7 @@ export default function App() {
     goMain('home');
   };
 
-  const handleCompleteProfile = async (name: string, babyDob: string) => {
-    if (!user && route.name !== 'completeProfile') return;
-    const email = route.name === 'completeProfile' ? route.email : user!.email;
-    const existing = await DB.findUserByEmail(email);
-    if (existing) {
-      const updated = { ...existing, name, babyDob };
-      await DB.upsertUser(updated);
-      await DB.setCurrentEmail(updated.email);
-      setUser({ name: updated.name, email: updated.email, babyDob: updated.babyDob });
-      const h = await DB.loadHistory(updated.email);
-      setHistory(h);
-    }
-    goMain('home');
-  };
+
 
   const handleLogout = async () => {
     await DB.setCurrentEmail(null);
@@ -220,7 +175,6 @@ export default function App() {
       <SafeAreaView style={styles.safe}>
         <LoginScreen
           onLogin={handleLogin}
-          onGoogleLogin={handleGoogleLogin}
           onGoRegister={() => { setLoginError(''); setRoute({ name: 'register' }); }}
           onForgot={() => { setLoginError(''); setRoute({ name: 'forgot' }); }}
           initialError={loginError}
@@ -234,15 +188,6 @@ export default function App() {
     return (
       <SafeAreaView style={styles.safe}>
         <RegisterScreen onRegister={handleRegister} onGoLogin={() => { setLoginError(''); setRoute({ name: 'login' }); }} />
-        <StatusBar style="light" />
-      </SafeAreaView>
-    );
-  }
-
-  if (route.name === 'completeProfile') {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <CompleteProfileScreen initialEmail={route.email} initialName={route.initialName} onComplete={handleCompleteProfile} />
         <StatusBar style="light" />
       </SafeAreaView>
     );

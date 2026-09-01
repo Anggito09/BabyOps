@@ -1,62 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import { colors, gradients, spacing } from '../theme/tokens';
-
-WebBrowser.maybeCompleteAuthSession();
 
 interface Props {
   onLogin: (email: string, password: string) => void;
-  onGoogleLogin: (email: string) => void;
   onGoRegister: () => void;
   onForgot?: () => void;
   initialError?: string;
 }
 
-export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, initialError = '' }: Props) {
+export function LoginScreen({ onLogin, onGoRegister, onForgot, initialError = '' }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [show, setShow] = useState(false);
   const [error, setError] = useState(initialError);
-  const [showGoogleSheet, setShowGoogleSheet] = useState(false);
-
-  // Google OAuth — ganti clientId dengan milikmu di Google Cloud Console
-  // Jika masih placeholder, tombol akan langsung mock tanpa panggil Google (hindari Error 401 invalid_client)
-  const GOOGLE_CLIENT_ID = '1080000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com';
-  const isPlaceholder = GOOGLE_CLIENT_ID.includes('xxxxxxxx') || GOOGLE_CLIENT_ID.includes('1080000000000');
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: GOOGLE_CLIENT_ID,
-  });
-
-  useEffect(() => {
-    if (response?.type === 'success' && response.authentication?.idToken) {
-      onGoogleLogin('google.user@gmail.com');
-    }
-  }, [response]);
-
-  const handleGoogle = async () => {
-    // Simulasi alur Google: tampilkan picker akun Google dulu, baru auth
-    if (isPlaceholder) {
-      setShowGoogleSheet(true);
-      return;
-    }
-    try {
-      if (request) {
-        const res = await promptAsync();
-        if (res?.type === 'success') return;
-      }
-    } catch {}
-    setShowGoogleSheet(true);
-  };
-
-  const pickGoogleAccount = (googleEmail: string) => {
-    setShowGoogleSheet(false);
-    onGoogleLogin(googleEmail);
-  };
 
   const handle = () => {
     if (!email.includes('@') || password.length < 6) {
@@ -121,52 +81,12 @@ export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, in
             </LinearGradient>
           </Pressable>
 
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or Sign In with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <Pressable style={[styles.googleBtn, !request && { opacity: 0.95 }]} onPress={handleGoogle}>
-            <Text style={styles.googleG}>G</Text>
-            <Text style={styles.googleText}>Sign In with Google</Text>
-          </Pressable>
-          <Text style={styles.googleHint}>Pilih akun Google kamu — akan diminta lengkapi profil bayi jika baru</Text>
-
           <View style={styles.bottomRow}>
             <Text style={styles.bottomText}>Don&apos;t have an account? </Text>
             <Pressable onPress={onGoRegister}><Text style={styles.bottomLink}>Sign Up</Text></Pressable>
           </View>
         </View>
       </ScrollView>
-
-      {showGoogleSheet && (
-        <View style={styles.sheetOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowGoogleSheet(false)} />
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Pilih akun Google</Text>
-              <Text style={styles.sheetSub}>Menghubungkan ke Google — pilih akun untuk melanjutkan</Text>
-            </View>
-            {[
-              { email: 'google@babyops.id', name: 'Akun Google Saya' },
-              { email: 'demo@babyops.id', name: 'Demo BabyOps' },
-            ].map((acc) => (
-              <Pressable key={acc.email} style={styles.accountRow} onPress={() => pickGoogleAccount(acc.email)}>
-                <View style={styles.accountAvatar}><Text style={styles.accountInitial}>{acc.name[0].toUpperCase()}</Text></View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.accountName}>{acc.name}</Text>
-                  <Text style={styles.accountEmail}>{acc.email}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color="#8AA0B8" />
-              </Pressable>
-            ))}
-            <Text style={styles.sheetHint}>Mode demo: akun Google asli akan muncul otomatis setelah kamu setup Client ID di Google Cloud. Sementara ini pilih demo di atas.</Text>
-            <Pressable style={styles.sheetCancel} onPress={() => setShowGoogleSheet(false)}><Text style={styles.sheetCancelText}>Batal</Text></Pressable>
-          </View>
-        </View>
-      )}
     </LinearGradient>
   );
 }
@@ -224,7 +144,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  input: { flex: 1, color: colors.ink, fontSize: 13 },
+  input: { flex: 1, color: colors.ink, fontSize: 13, borderWidth: 0, outlineWidth: 0 } as any,
   error: { color: colors.danger, fontSize: 12 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
   rememberRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
