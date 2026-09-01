@@ -5,14 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients } from '../theme/tokens';
 
 interface Props {
-  onRegister: (name: string, email: string) => void;
+  onRegister: (name: string, email: string, babyDob: string) => void;
   onGoLogin: () => void;
 }
 
 export function RegisterScreen({ onRegister, onGoLogin }: Props) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [babyDob, setBabyDob] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
@@ -33,8 +33,13 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
   }, []);
 
   const handle = () => {
-    if (!name.trim() || !email.includes('@') || phone.trim().length < 8 || password.length < 6) {
-      setError('Lengkapi nama, email valid, No. Hp & password ≥6 karakter.');
+    if (!name.trim() || !email.includes('@') || !babyDob.trim() || password.length < 6) {
+      setError('Lengkapi nama, email valid, tanggal lahir bayi (YYYY-MM-DD) & password ≥6 karakter.');
+      return;
+    }
+    const dob = new Date(babyDob.trim());
+    if (isNaN(dob.getTime()) || dob > new Date()) {
+      setError('Tanggal lahir tidak valid. Format YYYY-MM-DD, misal 2026-06-01.');
       return;
     }
     if (password !== confirm) {
@@ -42,7 +47,7 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
       return;
     }
     setError('');
-    onRegister(name.trim(), email);
+    onRegister(name.trim(), email, babyDob.trim());
   };
 
   return (
@@ -67,10 +72,10 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
             <TextInput placeholder="masukkan alamat email" placeholderTextColor="#8FA0B8" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
           </View>
 
-          <Text style={styles.label}>No. Hp</Text>
+          <Text style={styles.label}>Tanggal Lahir Bayi</Text>
           <View style={styles.pill}>
-            <View style={styles.pillIcon}><Ionicons name="call" size={14} color="#7A8CA8" /></View>
-            <TextInput placeholder="masukkan nomor hp" placeholderTextColor="#8FA0B8" value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.input} />
+            <View style={styles.pillIcon}><Ionicons name="calendar" size={14} color="#7A8CA8" /></View>
+            <TextInput placeholder="YYYY-MM-DD, contoh 2026-06-01" placeholderTextColor="#8FA0B8" value={babyDob} onChangeText={setBabyDob} style={styles.input} />
           </View>
 
           <Text style={styles.label}>Password</Text>

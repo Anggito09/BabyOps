@@ -1,5 +1,5 @@
-import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { articles } from '../data/articles';
@@ -8,11 +8,21 @@ import { TabKey } from '../components/BottomNav';
 
 interface Props {
   userName?: string;
+  babyAge?: string;
   onNavigate: (tab: TabKey) => void;
   onRecord: () => void;
 }
 
-export function HomeScreen({ userName, onNavigate, onRecord }: Props) {
+export function HomeScreen({ userName, babyAge = '03', onNavigate, onRecord }: Props) {
+  const displayName = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : 'Anggito Karta Wijaya';
+  const cardIn = useRef(new Animated.Value(30)).current;
+  const cardFade = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(cardIn, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(cardFade, { toValue: 1, duration: 600, useNativeDriver: true }),
+    ]).start();
+  }, []);
   return (
     <LinearGradient colors={[...gradients.github]} style={styles.gradient}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -21,7 +31,7 @@ export function HomeScreen({ userName, onNavigate, onRecord }: Props) {
           <Image source={require('../../assets/logo.png')} style={styles.headerLogo} resizeMode="contain" />
           <View style={styles.headerRight}>
             <View style={styles.ageBadge}>
-              <Text style={styles.ageNum}>03</Text>
+              <Text style={styles.ageNum}>{babyAge}</Text>
               <Text style={styles.ageText}>Bulan</Text>
             </View>
           </View>
@@ -29,11 +39,11 @@ export function HomeScreen({ userName, onNavigate, onRecord }: Props) {
 
         <View style={styles.greetBlock}>
           <Text style={styles.hello}>Selamat pagi, Parents!</Text>
-          <Text style={styles.name}>{userName ? userName : 'Anggito Karta Wijaya'}</Text>
+          <Text style={styles.name}>{displayName}</Text>
         </View>
 
         {/* White content card — rounded top seperti di screenshot */}
-        <View style={styles.contentCard}>
+        <Animated.View style={[styles.contentCard, { opacity: cardFade, transform: [{ translateY: cardIn }] }]}>
           {/* Disease History — pink FDE5E4 */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Riwayat Kesehatan</Text>
@@ -82,7 +92,7 @@ export function HomeScreen({ userName, onNavigate, onRecord }: Props) {
               </Pressable>
             ))}
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </LinearGradient>
   );
@@ -98,22 +108,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: 54,
   },
-  headerLogo: { width: 130, height: 32, tintColor: colors.white },
+  headerLogo: { width: 160, height: 38, tintColor: colors.white },
   headerRight: { alignItems: 'center' },
   ageBadge: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadow.card,
   },
   ageNum: { color: colors.primary, fontSize: 26, fontWeight: '900', lineHeight: 28 },
-  ageText: { color: colors.muted, fontSize: 10, fontWeight: '700' },
-  greetBlock: { paddingHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.lg },
-  hello: { color: '#CBEFFF', fontSize: 12 },
-  name: { color: colors.white, fontSize: 20, fontWeight: '900', marginTop: 4 },
+  ageText: { color: colors.muted, fontSize: 10, fontWeight: '800' },
+  greetBlock: { paddingHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: 18 },
+  hello: { color: '#CBEFFF', fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
+  name: { color: colors.white, fontSize: 24, fontWeight: '900', marginTop: 4, letterSpacing: -0.4, textShadowColor: 'rgba(0,0,0,0.18)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   contentCard: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 28,
@@ -124,19 +134,21 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: colors.ink },
-  date: { fontSize: 11, color: '#C46A80' },
+  sectionTitle: { fontSize: 16, fontWeight: '900', color: colors.ink, letterSpacing: -0.3 },
+  date: { fontSize: 11, color: '#C46A80', fontWeight: '600' },
   historyCard: {
     backgroundColor: '#FFF0F3',
     borderRadius: 20,
-    padding: 17,
+    padding: 18,
     shadowColor: '#003C5B',
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#FFE4E8',
   },
-  historyTitle: { fontSize: 17, fontWeight: '900', color: colors.ink, marginBottom: 5 },
-  historyBody: { fontSize: 12, color: colors.muted, lineHeight: 18 },
+  historyTitle: { fontSize: 18, fontWeight: '900', color: colors.ink, marginBottom: 5, letterSpacing: -0.3 },
+  historyBody: { fontSize: 13, color: colors.muted, lineHeight: 19, fontWeight: '500' },
   more: { alignSelf: 'flex-end', fontSize: 11, color: colors.githubDark, fontWeight: '800', marginTop: 8 },
   quickRow: { flexDirection: 'row', gap: 12 },
   quickCard: {

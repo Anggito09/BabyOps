@@ -38,27 +38,30 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
   }, []);
 
   // Google OAuth — ganti clientId dengan milikmu di Google Cloud Console
+  // Jika masih placeholder, tombol akan langsung mock tanpa panggil Google (hindari Error 401 invalid_client)
+  const GOOGLE_CLIENT_ID = '1080000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com';
+  const isPlaceholder = GOOGLE_CLIENT_ID.includes('xxxxxxxx') || GOOGLE_CLIENT_ID.includes('1080000000000');
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: '1080000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com',
-    // webClientId / iosClientId / androidClientId opsional, isi jika sudah buat di console
+    clientId: GOOGLE_CLIENT_ID,
   });
 
   useEffect(() => {
     if (response?.type === 'success' && response.authentication?.idToken) {
-      // TODO: verifikasi idToken di backend, ambil email dari token
-      // Untuk sekarang mock sukses dengan email Google
       onLogin('google.user@gmail.com');
     }
   }, [response]);
 
   const handleGoogle = async () => {
+    if (isPlaceholder) {
+      onLogin('google@babyops.id');
+      return;
+    }
     try {
       if (request) {
         const res = await promptAsync();
-        if (res?.type === 'success') return; // ditangani useEffect
+        if (res?.type === 'success') return;
       }
     } catch {}
-    // Fallback mock — agar tetap bisa demo tanpa setup Google Cloud
     onLogin('google@babyops.id');
   };
 

@@ -1,62 +1,139 @@
-import React, { useEffect, useState } from 'react';
-import { Animated, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView, StyleSheet } from 'react-native';
+import { SplashScreen } from './src/screens/SplashScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
+import { HomeScreen } from './src/screens/HomeScreen';
+import { RecordScreen } from './src/screens/RecordScreen';
+import { ResultScreen } from './src/screens/ResultScreen';
+import { DiagnosisScreen } from './src/screens/DiagnosisScreen';
+import { EducationScreen } from './src/screens/EducationScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
+import { LoginScreen } from './src/screens/LoginScreen';
+import { RegisterScreen } from './src/screens/RegisterScreen';
+import { BottomNav, TabKey } from './src/components/BottomNav';
+import { colors } from './src/theme/tokens';
+import { CryPrediction } from './src/model/cryClassifier';
 
-type Screen = 'splash'|'onboarding'|'home'|'record'|'recordResult'|'diagnosis'|'diagnosisForm'|'diagnosisResult'|'education'|'article'|'solution'|'profile';
-const BLUE='#0796D5', DARK='#07567D', PALE='#EAF8FE', INK='#183049', MUTED='#6E8292';
+type Route =
+  | { name: 'splash' }
+  | { name: 'onboarding' }
+  | { name: 'login' }
+  | { name: 'register' }
+  | { name: 'main'; tab: TabKey }
+  | { name: 'record' }
+  | { name: 'result'; prediction: CryPrediction };
 
-const Logo=()=> <View style={s.logoRow}><Text style={s.logo}>Baby</Text><View style={s.logoBaby}><Text>👶</Text></View><Text style={s.logo}>ps</Text></View>;
-const Button=({title,onPress,light=false}:{title:string,onPress:()=>void,light?:boolean})=><Pressable onPress={onPress} style={({pressed})=>[s.button,light&&s.buttonLight,pressed&&{opacity:.8}]}><Text style={[s.buttonText,light&&{color:BLUE}]}>{title}</Text><Ionicons name="arrow-forward" size={17} color={light?BLUE:'#fff'}/></Pressable>;
+function getAgeMonths(dobStr?: string): string {
+  if (!dobStr) return '03';
+  const dob = new Date(dobStr);
+  if (isNaN(dob.getTime())) return '03';
+  const now = new Date();
+  let months = (now.getFullYear() - dob.getFullYear()) * 12 + (now.getMonth() - dob.getMonth());
+  if (now.getDate() < dob.getDate()) months -= 1;
+  months = Math.max(0, Math.min(24, months));
+  return String(months).padStart(2, '0');
+}
 
-const BottomBar=({go,active}:{go:(x:Screen)=>void,active?:string})=><View style={s.bottom}>
-  <NavIcon icon="home" label="Home" active={active==='home'} onPress={()=>go('home')}/>
-  <NavIcon icon="book" label="Edukasi" active={active==='education'} onPress={()=>go('education')}/>
-  <Pressable style={s.mic} onPress={()=>go('record')}><Ionicons name="mic" color="#fff" size={28}/></Pressable>
-  <NavIcon icon="clipboard" label="Diagnosis" active={active==='diagnosis'} onPress={()=>go('diagnosis')}/>
-  <NavIcon icon="person" label="Profil" active={active==='profile'} onPress={()=>go('profile')}/>
-</View>;
-const NavIcon=({icon,label,active,onPress}:{icon:any,label:string,active?:boolean,onPress:()=>void})=><Pressable onPress={onPress} style={s.navItem}><Ionicons name={icon} size={21} color={active?BLUE:'#87A7B4'}/><Text style={[s.navLabel,active&&{color:BLUE}]}>{label}</Text></Pressable>;
-const Header=({back}:{back?:()=>void})=><View style={s.header}>{back?<Pressable onPress={back} style={s.back}><Ionicons name="arrow-back" size={23} color="#fff"/><Text style={s.backText}>Kembali</Text></Pressable>:<Logo/>}</View>;
+export default function App() {
+  const [route, setRoute] = useState<Route>({ name: 'splash' });
+  const [user, setUser] = useState<{ name: string; email: string; babyDob?: string } | null>(null);
 
-function Splash({next}:{next:()=>void}){const fade=new Animated.Value(0);useEffect(()=>{Animated.timing(fade,{toValue:1,duration:700,useNativeDriver:true}).start();const t=setTimeout(next,1400);return()=>clearTimeout(t)},[]);return <Gradient><Animated.View style={[s.center,{opacity:fade}]}><Logo/><Text style={s.tagline}>Your baby voice assistant</Text></Animated.View></Gradient>}
+  const goMain = (tab: TabKey = 'home') => setRoute({ name: 'main', tab });
+  const handleLogin = (email: string) => {
+    setUser({ name: email.split('@')[0], email });
+    goMain('home');
+  };
+  const handleRegister = (name: string, email: string, babyDob: string) => {
+    setUser({ name, email, babyDob });
+    goMain('home');
+  };
+  const handleLogout = () => {
+    setUser(null);
+    setRoute({ name: 'login' });
+  };
 
-const onboarding=[
-  {emoji:'👶',bubble:'Ouh Neh!',title:'Kenali Keinginan Bayi',text:'BabyOps membantu orang tua memahami arti tangisan bayi dengan pengalaman yang sederhana dan menenangkan.'},
-  {emoji:'🍼',bubble:'Neh Ouh?',title:'Buat Si Kecil Bahagia',text:'Rekam suara bayi, dapatkan kemungkinan kebutuhan, lalu lihat langkah yang bisa dilakukan.'},
-  {emoji:'🤱',bubble:'For Mom',title:'Edukasi untuk Ibu',text:'Temukan artikel singkat dan praktis mengenai kesehatan, menyusui, dan perkembangan bayi.'}
-];
-function Onboarding({done}:{done:()=>void}){const[i,setI]=useState(0),x=onboarding[i];return <Gradient><SafeAreaView style={s.safe}><View style={s.onTop}><Logo/><Pressable onPress={done}><Text style={s.skip}>Lewati</Text></Pressable></View><View style={s.hero}><View style={s.bubble}><Text style={s.bubbleText}>{x.bubble}</Text></View><Text style={s.heroEmoji}>{x.emoji}</Text></View><View style={s.onCard}><View style={s.dots}>{onboarding.map((_,n)=><View key={n} style={[s.dot,n===i&&s.dotActive]}/>)}</View><Text style={s.onTitle}>{x.title}</Text><Text style={s.bodyCenter}>{x.text}</Text><Button title={i===2?'Mulai sekarang':'Selanjutnya'} onPress={()=>i===2?done():setI(i+1)}/></View></SafeAreaView></Gradient>}
+  if (route.name === 'splash') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <SplashScreen onFinish={() => setRoute({ name: 'onboarding' })} />
+        <StatusBar style="light" />
+      </SafeAreaView>
+    );
+  }
 
-function Shell({children,go,active,back}:{children:React.ReactNode,go:(x:Screen)=>void,active?:string,back?:()=>void}){return <Gradient><StatusBar style="light"/><SafeAreaView style={s.safe}><Header back={back}/><View style={s.flex}>{children}</View><BottomBar go={go} active={active}/></SafeAreaView></Gradient>}
-function Home({go}:{go:(x:Screen)=>void}){return <Shell go={go} active="home"><ScrollView contentContainerStyle={s.page} showsVerticalScrollIndicator={false}><View style={s.homeHead}><View><Text style={s.hello}>Selamat pagi, Parents!</Text><Text style={s.name}>Anggito Karta Wijaya</Text></View><View style={s.age}><Text style={s.ageNum}>03</Text><Text style={s.ageText}>Bulan</Text></View></View><View style={s.history}><View style={s.rowBetween}><Text style={s.sectionTitle}>Riwayat Kesehatan</Text><Text style={s.date}>24/07/2026</Text></View><Text style={s.cardTitle}>Bronkiolitis</Text><Text style={s.cardBody}>Infeksi virus pada saluran pernapasan kecil yang umumnya terjadi pada bayi.</Text><Pressable onPress={()=>go('diagnosisResult')}><Text style={s.more}>Baca selengkapnya →</Text></Pressable></View><View style={s.quickRow}><Quick icon="mic" title="Rekam tangisan" onPress={()=>go('record')}/><Quick icon="medical" title="Cek gejala" onPress={()=>go('diagnosis')}/></View><Text style={s.sectionWhite}>Edukasi Pilihan</Text><View style={s.educGrid}><EducationCard color="#7A42B7" title="Menyusui perkuat imunitas bayi" onPress={()=>go('article')}/><EducationCard color="#2778D2" title="Hal penting setelah bayi lahir" onPress={()=>go('article')}/></View></ScrollView></Shell>}
-const Quick=({icon,title,onPress}:{icon:any,title:string,onPress:()=>void})=><Pressable style={s.quick} onPress={onPress}><View style={s.quickIcon}><Ionicons name={icon} size={23} color={BLUE}/></View><Text style={s.quickText}>{title}</Text></Pressable>;
-const EducationCard=({color,title,onPress}:{color:string,title:string,onPress:()=>void})=><Pressable onPress={onPress} style={[s.educCard,{backgroundColor:color}]}><View style={s.miniPill}><Text style={s.miniPillText}>Education</Text></View><Text style={s.educTitle}>{title}</Text><Text style={s.educRead}>Baca artikel  •  4 menit</Text></Pressable>;
+  if (route.name === 'onboarding') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <OnboardingScreen onFinish={() => setRoute({ name: 'login' })} />
+        <StatusBar style="light" />
+      </SafeAreaView>
+    );
+  }
 
-function Record({go}:{go:(x:Screen)=>void}){const[recording,setRecording]=useState(false);return <Shell go={go} back={()=>go('home')}><View style={s.center}><Text style={s.kicker}>ANALISIS SUARA BAYI</Text><Text style={s.bigTitle}>{recording?'Sedang mendengarkan…':'Rekam tangisan bayi'}</Text><Text style={s.recordDesc}>Dekatkan ponsel sekitar 30–50 cm dari bayi dan pastikan suasana cukup tenang.</Text><View style={s.rings}><View style={s.ring2}><View style={s.babyCircle}><Text style={s.babyEmoji}>👶</Text></View></View></View>{recording&&<View style={s.wave}><Text style={s.waveText}>▂▅▃▇▄▆▂▅▇▃</Text></View>}<Pressable style={[s.recordBtn,recording&&s.stopBtn]} onPress={()=>recording?go('recordResult'):setRecording(true)}><Ionicons name={recording?'stop':'mic'} color="#fff" size={28}/><Text style={s.recordBtnText}>{recording?'Selesai':'Mulai rekam'}</Text></Pressable></View></Shell>}
-function RecordResult({go}:{go:(x:Screen)=>void}){return <Shell go={go} back={()=>go('record')}><ScrollView contentContainerStyle={s.resultPage}><Text style={s.kicker}>HASIL ANALISIS SUARA</Text><View style={s.resultIcon}><Ionicons name="medical" size={39} color="#E53935"/></View><Text style={s.sound}>“Eairh”</Text><Text style={s.confidence}>Tingkat keyakinan 87%</Text><Text style={s.resultCopy}>Kemungkinan bayi sedang mengalami perut kembung dan ingin mengeluarkan angin.</Text><View style={s.notice}><Ionicons name="information-circle" size={20} color={DARK}/><Text style={s.noticeText}>Hasil ini merupakan panduan awal, bukan diagnosis medis.</Text></View><Button title="Lihat solusi" onPress={()=>go('solution')}/><Pressable onPress={()=>go('record')}><Text style={s.link}>Rekam ulang</Text></Pressable></ScrollView></Shell>}
-function Solution({go}:{go:(x:Screen)=>void}){return <Shell go={go} back={()=>go('recordResult')}><ScrollView contentContainerStyle={s.page}><View style={s.whiteCard}><Text style={s.bigTitleDark}>Solusi yang dapat dicoba</Text>{['Gunakan pijatan lembut pada perut bayi dengan gerakan searah jarum jam.','Gerakkan kaki bayi perlahan seperti mengayuh sepeda untuk membantu mengeluarkan angin.','Gendong bayi tegak dan bantu bersendawa setelah menyusu.'].map((x,i)=><View style={s.step} key={x}><View style={s.stepNum}><Text style={s.stepNumText}>{i+1}</Text></View><Text style={s.stepText}>{x}</Text></View>)}<View style={s.alert}><Text style={s.alertTitle}>Segera hubungi tenaga medis</Text><Text style={s.alertText}>Jika bayi tampak sangat kesakitan, sulit bernapas, muntah berulang, atau keluhan tidak membaik.</Text></View></View></ScrollView></Shell>}
+  if (route.name === 'login') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <LoginScreen onLogin={handleLogin} onGoRegister={() => setRoute({ name: 'register' })} />
+        <StatusBar style="light" />
+      </SafeAreaView>
+    );
+  }
 
-const symptoms=[['eye','Mata'],['thermometer','Suhu'],['fitness','Napas'],['restaurant','Makan'],['flash','Energi'],['body','Berat badan'],['hand-left','Kulit']];
-function Diagnosis({go}:{go:(x:Screen)=>void}){return <Shell go={go} active="diagnosis"><View style={s.center}><View style={s.diagCircle}><Ionicons name="clipboard" size={42} color={BLUE}/></View><Text style={s.bigTitle}>Pemeriksaan gejala</Text><Text style={s.recordDesc}>Pilih kategori gejala untuk membantu mengenali kondisi awal bayi.</Text><View style={s.symptoms}>{symptoms.map(([icon,x])=><Pressable key={x} style={s.symptom} onPress={()=>go('diagnosisForm')}><View style={s.symptomIcon}><Ionicons name={icon as any} size={24} color={BLUE}/></View><Text style={s.symptomText}>{x}</Text></Pressable>)}</View></View></Shell>}
-function DiagnosisForm({go}:{go:(x:Screen)=>void}){const opts=['Mata normal','Mata kemerahan','Mata bengkak','Mata pucat','Pembengkakan pada mata','Mata berair'];const[selected,setSelected]=useState('');return <Shell go={go} back={()=>go('diagnosis')}><View style={s.formWrap}><View style={s.formIcon}><Ionicons name="eye" size={31} color="#72CB38"/></View><Text style={s.bigTitleDark}>Kondisi mata</Text><Text style={s.formHelp}>Pilih kondisi yang paling sesuai saat ini.</Text>{opts.map(x=><Pressable key={x} style={[s.option,selected===x&&s.optionSelected]} onPress={()=>setSelected(x)}><Text style={[s.optionText,selected===x&&{color:BLUE,fontWeight:'700'}]}>{x}</Text><Ionicons name={selected===x?'checkmark-circle':'ellipse-outline'} color={selected===x?BLUE:'#AAC0C9'} size={21}/></Pressable>)}<Button title="Lihat hasil" onPress={()=>go('diagnosisResult')}/></View></Shell>}
-function DiagnosisResult({go}:{go:(x:Screen)=>void}){return <Shell go={go} back={()=>go('diagnosis')}><ScrollView contentContainerStyle={s.page}><View style={s.diagnosisCard}><View style={s.diagnosisHead}><Ionicons name="medical" color="#fff" size={22}/><Text style={s.diagnosisHeadText}>Hasil pemeriksaan awal</Text></View><View style={s.diagnosisBody}><Text style={s.disease}>Bronkiolitis</Text><View style={s.riskPill}><Text style={s.riskText}>Risiko sedang</Text></View><Text style={s.paragraph}>Bronkiolitis adalah infeksi virus pada saluran pernapasan kecil yang umumnya terjadi pada bayi. Gejala dapat meliputi batuk, pilek, napas berbunyi, dan kesulitan bernapas.</Text></View><View style={s.solutionBox}><Text style={s.solutionTitle}>Saran awal</Text><Text style={s.paragraph}>Jauhkan bayi dari asap rokok, jaga kebutuhan cairan, dan pantau pola napas. Konsultasikan kepada dokter bila gejala memburuk.</Text></View></View><View style={s.notice}><Ionicons name="warning" size={20} color="#AA6A00"/><Text style={s.noticeText}>BabyOps tidak menggantikan pemeriksaan dokter.</Text></View></ScrollView></Shell>}
+  if (route.name === 'register') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <RegisterScreen onRegister={handleRegister} onGoLogin={() => setRoute({ name: 'login' })} />
+        <StatusBar style="light" />
+      </SafeAreaView>
+    );
+  }
 
-function Education({go}:{go:(x:Screen)=>void}){return <Shell go={go} active="education"><ScrollView contentContainerStyle={s.page}><Text style={s.bigTitle}>Edukasi untuk Parents</Text><Text style={s.recordDescLeft}>Informasi tepercaya untuk menemani tumbuh kembang si kecil.</Text><View style={s.search}><Ionicons name="search" size={19} color={MUTED}/><Text style={s.searchText}>Cari artikel kesehatan bayi</Text></View><EducationCard color="#7A42B7" title="Menyusui perkuat sistem kekebalan tubuh bayi" onPress={()=>go('article')}/><EducationCard color="#2778D2" title="Hal yang harus diperhatikan jika kembali bekerja" onPress={()=>go('article')}/><EducationCard color="#EC637D" title="Panduan tidur aman untuk bayi" onPress={()=>go('article')}/></ScrollView></Shell>}
-function Article({go}:{go:(x:Screen)=>void}){return <Shell go={go} back={()=>go('education')}><ScrollView contentContainerStyle={s.page}><View style={s.articleHero}><Text style={s.articleTag}>NUTRISI & MENYUSUI</Text><Text style={s.articleHeroTitle}>Menyusui memperkuat sistem kekebalan tubuh bayi</Text><Text style={s.articleMeta}>4 menit baca  •  Ditinjau tenaga kesehatan</Text></View><View style={s.articleBody}><Text style={s.lead}>ASI mengandung nutrisi dan antibodi yang dibutuhkan bayi untuk mendukung pertumbuhan serta melindunginya dari berbagai infeksi.</Text><Text style={s.articleHeading}>Manfaat utama ASI</Text><Text style={s.paragraph}>Pemberian ASI membantu membangun daya tahan tubuh, mendukung perkembangan otak, dan memperkuat ikatan antara ibu dan bayi.</Text><Text style={s.articleHeading}>Tips untuk ibu</Text><Text style={s.paragraph}>Susui bayi sesuai kebutuhannya, perhatikan posisi dan pelekatan, cukupi asupan cairan, serta jangan ragu meminta bantuan tenaga kesehatan.</Text></View></ScrollView></Shell>}
-function Profile({go}:{go:(x:Screen)=>void}){return <Shell go={go} active="profile"><View style={s.center}><View style={s.avatar}><Text style={{fontSize:48}}>👨‍👩‍👦</Text></View><Text style={s.bigTitle}>Anggito Karta Wijaya</Text><Text style={s.recordDesc}>Orang tua dari bayi usia 3 bulan</Text><View style={s.profileCard}>{[['person','Data orang tua'],['happy','Profil bayi'],['notifications','Pengingat'],['shield-checkmark','Privasi & keamanan']].map(([i,t])=><View style={s.profileRow} key={t}><Ionicons name={i as any} color={BLUE} size={21}/><Text style={s.profileText}>{t}</Text><Ionicons name="chevron-forward" color="#9BB0BA" size={20}/></View>)}</View></View></Shell>}
+  if (route.name === 'record') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <RecordScreen
+          onBack={() => goMain('home')}
+          onResult={(prediction) => setRoute({ name: 'result', prediction })}
+        />
+        <StatusBar style="light" />
+      </SafeAreaView>
+    );
+  }
 
-export default function App(){const[screen,setScreen]=useState<Screen>('splash');const render=()=>{switch(screen){case'splash':return <Splash next={()=>setScreen('onboarding')}/>;case'onboarding':return <Onboarding done={()=>setScreen('home')}/>;case'home':return <Home go={setScreen}/>;case'record':return <Record go={setScreen}/>;case'recordResult':return <RecordResult go={setScreen}/>;case'solution':return <Solution go={setScreen}/>;case'diagnosis':return <Diagnosis go={setScreen}/>;case'diagnosisForm':return <DiagnosisForm go={setScreen}/>;case'diagnosisResult':return <DiagnosisResult go={setScreen}/>;case'education':return <Education go={setScreen}/>;case'article':return <Article go={setScreen}/>;default:return <Profile go={setScreen}/>}};return render()}
-const Gradient=({children}:{children:React.ReactNode})=><LinearGradient colors={['#10A9EB','#087CB4','#064B70']} style={s.flex}>{children}</LinearGradient>;
+  if (route.name === 'result') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ResultScreen
+          prediction={route.prediction}
+          onBack={() => setRoute({ name: 'record' })}
+          onHome={() => goMain('home')}
+        />
+        <StatusBar style="light" />
+      </SafeAreaView>
+    );
+  }
 
-const s=StyleSheet.create({
- flex:{flex:1},safe:{flex:1},center:{flex:1,alignItems:'center',justifyContent:'center',padding:24},logoRow:{flexDirection:'row',alignItems:'center'},logo:{fontSize:28,fontWeight:'900',color:'#fff',letterSpacing:-1.5},logoBaby:{width:32,height:32,borderRadius:16,backgroundColor:'#fff',alignItems:'center',justifyContent:'center',marginHorizontal:2},tagline:{color:'#D5F3FF',marginTop:8,fontSize:12,letterSpacing:1},header:{height:58,paddingHorizontal:20,justifyContent:'center'},back:{flexDirection:'row',alignItems:'center',gap:7},backText:{color:'#fff',fontSize:15,fontWeight:'700'},
- onTop:{padding:20,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},skip:{color:'#fff',fontWeight:'700'},hero:{flex:1,alignItems:'center',justifyContent:'center'},heroEmoji:{fontSize:112},bubble:{backgroundColor:'#fff',paddingHorizontal:22,paddingVertical:11,borderRadius:25,marginBottom:12},bubbleText:{fontSize:22,fontWeight:'900',color:INK},onCard:{backgroundColor:'#fff',borderTopLeftRadius:34,borderTopRightRadius:34,padding:28,paddingBottom:35},dots:{flexDirection:'row',justifyContent:'center',gap:7,marginBottom:16},dot:{width:7,height:7,borderRadius:4,backgroundColor:'#CFE0E7'},dotActive:{width:22,backgroundColor:BLUE},onTitle:{fontSize:25,fontWeight:'900',color:INK,textAlign:'center'},bodyCenter:{color:MUTED,textAlign:'center',lineHeight:21,marginTop:10,marginBottom:22},
- button:{height:52,borderRadius:16,backgroundColor:BLUE,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9,marginTop:16},buttonLight:{backgroundColor:'#fff'},buttonText:{color:'#fff',fontWeight:'800',fontSize:15},bottom:{height:72,backgroundColor:'#fff',borderTopLeftRadius:24,borderTopRightRadius:24,flexDirection:'row',alignItems:'center',justifyContent:'space-around',paddingHorizontal:10},navItem:{width:58,alignItems:'center',gap:3},navLabel:{fontSize:9,color:'#87A7B4'},mic:{width:62,height:62,borderRadius:31,backgroundColor:BLUE,borderWidth:5,borderColor:'#D7F3FF',alignItems:'center',justifyContent:'center',marginTop:-28,shadowColor:'#00547C',shadowOpacity:.25,shadowRadius:9,elevation:6},
- page:{padding:20,paddingBottom:30,gap:14},homeHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},hello:{color:'#CBEFFF',fontSize:12},name:{color:'#fff',fontSize:20,fontWeight:'900',marginTop:4},age:{width:68,height:68,borderRadius:34,backgroundColor:'#fff',alignItems:'center',justifyContent:'center'},ageNum:{color:BLUE,fontSize:27,fontWeight:'900',lineHeight:28},ageText:{color:MUTED,fontSize:10,fontWeight:'700'},history:{backgroundColor:'#FFF0F3',borderRadius:20,padding:17,shadowColor:'#003C5B',shadowOpacity:.12,shadowRadius:10,elevation:3},rowBetween:{flexDirection:'row',justifyContent:'space-between'},sectionTitle:{fontSize:15,fontWeight:'800',color:INK},date:{fontSize:11,color:'#C46A80'},cardTitle:{fontSize:17,fontWeight:'900',color:INK,marginTop:12},cardBody:{fontSize:12,color:MUTED,lineHeight:18,marginTop:5},more:{alignSelf:'flex-end',fontSize:11,color:DARK,fontWeight:'800',marginTop:8},quickRow:{flexDirection:'row',gap:12},quick:{flex:1,backgroundColor:'#fff',padding:14,borderRadius:18,flexDirection:'row',alignItems:'center',gap:9},quickIcon:{width:38,height:38,borderRadius:12,backgroundColor:PALE,alignItems:'center',justifyContent:'center'},quickText:{color:INK,fontSize:12,fontWeight:'800',flex:1},sectionWhite:{color:'#fff',fontSize:18,fontWeight:'900',marginTop:3},educGrid:{flexDirection:'row',gap:12},educCard:{borderRadius:18,padding:16,minHeight:122,flex:1,justifyContent:'space-between',overflow:'hidden'},miniPill:{alignSelf:'flex-start',backgroundColor:'#ffffff30',paddingHorizontal:9,paddingVertical:4,borderRadius:9},miniPillText:{color:'#fff',fontSize:9,fontWeight:'800'},educTitle:{color:'#fff',fontSize:15,fontWeight:'900',lineHeight:19,marginVertical:10},educRead:{color:'#E9F4FF',fontSize:9},
- kicker:{fontSize:11,fontWeight:'900',letterSpacing:1.4,color:'#CFF2FF'},bigTitle:{fontSize:26,fontWeight:'900',color:'#fff',textAlign:'center',marginTop:8},bigTitleDark:{fontSize:24,fontWeight:'900',color:INK,textAlign:'center',marginBottom:7},recordDesc:{color:'#D5EFF9',fontSize:13,lineHeight:19,textAlign:'center',marginTop:9,maxWidth:320},recordDescLeft:{color:'#D5EFF9',fontSize:13,lineHeight:19},rings:{width:220,height:220,borderRadius:110,borderWidth:1,borderColor:'#73CFF3',alignItems:'center',justifyContent:'center',marginVertical:26},ring2:{width:168,height:168,borderRadius:84,borderWidth:1,borderColor:'#A6E4FA',alignItems:'center',justifyContent:'center'},babyCircle:{width:116,height:116,borderRadius:58,backgroundColor:'#fff',alignItems:'center',justifyContent:'center'},babyEmoji:{fontSize:64},wave:{height:28,justifyContent:'center'},waveText:{color:'#fff',fontSize:25,letterSpacing:3},recordBtn:{height:52,borderRadius:26,backgroundColor:'#12B6E9',paddingHorizontal:25,flexDirection:'row',alignItems:'center',gap:10,borderWidth:3,borderColor:'#8FE3FA'},stopBtn:{backgroundColor:'#F04B55',borderColor:'#FFC0C4'},recordBtnText:{color:'#fff',fontWeight:'900'},
- resultPage:{margin:20,backgroundColor:'#fff',borderRadius:28,padding:24,alignItems:'center'},resultIcon:{width:84,height:84,borderRadius:42,backgroundColor:'#F2F7F9',alignItems:'center',justifyContent:'center',marginTop:18},sound:{fontSize:35,fontWeight:'900',color:INK,marginTop:15},confidence:{backgroundColor:'#E4F7E7',color:'#26813B',fontSize:11,fontWeight:'800',paddingHorizontal:13,paddingVertical:6,borderRadius:12,marginTop:6},resultCopy:{fontSize:15,color:INK,lineHeight:23,textAlign:'center',marginVertical:20},notice:{flexDirection:'row',gap:9,backgroundColor:'#FFF4D9',borderRadius:13,padding:13,alignItems:'center',marginVertical:8},noticeText:{fontSize:11,color:'#5B6670',lineHeight:16,flex:1},link:{color:BLUE,fontWeight:'800',marginTop:17},whiteCard:{backgroundColor:'#fff',borderRadius:24,padding:20},step:{flexDirection:'row',gap:13,marginTop:19},stepNum:{width:31,height:31,borderRadius:16,backgroundColor:PALE,alignItems:'center',justifyContent:'center'},stepNumText:{color:BLUE,fontWeight:'900'},stepText:{flex:1,color:INK,lineHeight:20,fontSize:13},alert:{backgroundColor:'#FFF0F1',padding:14,borderRadius:15,marginTop:22},alertTitle:{color:'#C93542',fontWeight:'900',marginBottom:5},alertText:{color:MUTED,fontSize:12,lineHeight:18},
- diagCircle:{width:108,height:108,borderRadius:54,backgroundColor:'#fff',alignItems:'center',justifyContent:'center',marginBottom:8},symptoms:{backgroundColor:'#fff',borderRadius:23,padding:14,marginTop:22,flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:10},symptom:{width:78,alignItems:'center',paddingVertical:7},symptomIcon:{width:48,height:48,borderRadius:24,backgroundColor:PALE,alignItems:'center',justifyContent:'center'},symptomText:{fontSize:10,color:INK,fontWeight:'700',marginTop:5},formWrap:{margin:20,backgroundColor:'#fff',borderRadius:25,padding:20},formIcon:{width:66,height:66,borderRadius:33,backgroundColor:'#F0FFE8',alignSelf:'center',alignItems:'center',justifyContent:'center',marginBottom:10},formHelp:{color:MUTED,textAlign:'center',fontSize:12,marginBottom:14},option:{height:44,borderWidth:1,borderColor:'#DDE8ED',borderRadius:12,paddingHorizontal:13,flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:8},optionSelected:{borderColor:BLUE,backgroundColor:'#F0FAFF'},optionText:{color:INK,fontSize:12},diagnosisCard:{borderRadius:22,overflow:'hidden',backgroundColor:'#fff'},diagnosisHead:{backgroundColor:'#E02727',padding:15,flexDirection:'row',alignItems:'center',gap:9},diagnosisHeadText:{color:'#fff',fontSize:16,fontWeight:'900'},diagnosisBody:{padding:18,backgroundColor:'#FFF2F2'},disease:{fontSize:24,fontWeight:'900',color:INK},riskPill:{alignSelf:'flex-start',backgroundColor:'#FFD9D5',paddingHorizontal:10,paddingVertical:5,borderRadius:10,marginVertical:8},riskText:{color:'#C33932',fontSize:10,fontWeight:'800'},paragraph:{color:'#4E6070',fontSize:13,lineHeight:21},solutionBox:{backgroundColor:'#EAFFF2',padding:18},solutionTitle:{color:'#168B4C',fontWeight:'900',fontSize:16,marginBottom:7},
- search:{backgroundColor:'#fff',height:46,borderRadius:14,flexDirection:'row',alignItems:'center',paddingHorizontal:13,gap:8},searchText:{color:MUTED,fontSize:12},articleHero:{backgroundColor:'#7A42B7',borderRadius:22,padding:22,minHeight:190,justifyContent:'flex-end'},articleTag:{color:'#EEDFFF',fontSize:10,fontWeight:'900',letterSpacing:1},articleHeroTitle:{color:'#fff',fontSize:23,fontWeight:'900',lineHeight:28,marginVertical:10},articleMeta:{color:'#E9DFFF',fontSize:10},articleBody:{backgroundColor:'#fff',borderRadius:22,padding:20},lead:{color:INK,fontSize:15,fontWeight:'600',lineHeight:23},articleHeading:{fontSize:18,fontWeight:'900',color:INK,marginTop:18,marginBottom:6},avatar:{width:100,height:100,borderRadius:50,backgroundColor:'#fff',alignItems:'center',justifyContent:'center'},profileCard:{backgroundColor:'#fff',borderRadius:20,width:'100%',paddingHorizontal:16,marginTop:20},profileRow:{height:56,flexDirection:'row',alignItems:'center',borderBottomWidth:1,borderBottomColor:'#EDF2F4',gap:12},profileText:{flex:1,color:INK,fontSize:13,fontWeight:'700'}
+  const babyAge = getAgeMonths(user?.babyDob);
+  return (
+    <SafeAreaView style={styles.safe}>
+      {route.tab === 'home' && <HomeScreen userName={user?.name} babyAge={babyAge} onNavigate={(tab) => goMain(tab)} onRecord={() => setRoute({ name: 'record' })} />}
+      {route.tab === 'diagnosis' && <DiagnosisScreen />}
+      {route.tab === 'education' && <EducationScreen />}
+      {route.tab === 'profile' && <ProfileScreen user={user} babyAge={babyAge} onLogout={handleLogout} onLogin={() => setRoute({ name: 'login' })} />}
+      <BottomNav
+        active={route.tab}
+        onChange={(tab) => goMain(tab)}
+        onRecord={() => setRoute({ name: 'record' })}
+      />
+      <StatusBar style="dark" />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.primaryDarker,
+  },
 });

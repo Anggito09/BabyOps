@@ -5,19 +5,20 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients, spacing } from '../theme/tokens';
 
 interface Props {
-  user?: { name: string; email: string } | null;
+  user?: { name: string; email: string; babyDob?: string } | null;
+  babyAge?: string;
   onLogout: () => void;
   onLogin: () => void;
 }
 
-export function ProfileScreen({ user, onLogout, onLogin }: Props) {
+export function ProfileScreen({ user, babyAge = '03', onLogout, onLogin }: Props) {
   return (
     <LinearGradient colors={[...gradients.github]} style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.center}>
           <View style={styles.avatar}><Text style={styles.avatarEmoji}>👨‍👩‍👦</Text></View>
           <Text style={styles.name}>{user?.name ?? 'Anggito Karta Wijaya'}</Text>
-          <Text style={styles.sub}>{user?.email ?? 'Orang tua dari bayi usia 3 bulan'}</Text>
+          <Text style={styles.sub}>{user?.email ?? 'Orang tua dari bayi usia ' + babyAge + ' bulan'}{user?.babyDob ? ' • lahir ' + user.babyDob : ''}</Text>
           <View style={styles.card}>
             {[
               ['person', 'Data orang tua'],
