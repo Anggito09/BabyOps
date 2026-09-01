@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { CalendarPicker } from '../components/CalendarPicker';
 import { colors, gradients } from '../theme/tokens';
 
 interface Props {
@@ -61,19 +61,19 @@ export function CompleteProfileScreen({ initialEmail, initialName, onComplete }:
             <Ionicons name="checkmark-circle" size={16} color={colors.success} />
           </View>
           <Text style={styles.label}>Tanggal Lahir Bayi *</Text>
-          <Pressable onPress={() => setShowPicker(true)} style={styles.pill}>
-            <Pressable onPress={() => setShowPicker(true)} style={styles.pillIcon} hitSlop={8}>
-              <Ionicons name="calendar" size={14} color="#7A8CA8" />
-            </Pressable>
-            <Text style={[styles.input, !babyDate && { color: '#8FA0B8' }]}>{babyDate ? formatDate(babyDate) : 'Pilih tanggal — ketuk kalender'}</Text>
-            <Pressable onPress={() => setShowPicker(true)} hitSlop={8}>
-              <Ionicons name="chevron-down" size={16} color="#7A8CA8" />
-            </Pressable>
+          <Pressable onPress={() => setShowPicker(!showPicker)} style={styles.pill}>
+            <View style={styles.pillIcon}><Ionicons name="calendar" size={14} color="#7A8CA8" /></View>
+            <Text style={[styles.input, !babyDate && { color: '#8FA0B8' }]}>{babyDate ? formatDate(babyDate) : 'Pilih tanggal lahir'}</Text>
+            <Ionicons name={showPicker ? 'chevron-up' : 'chevron-down'} size={16} color="#7A8CA8" />
           </Pressable>
           {showPicker && (
-            <DateTimePicker value={babyDate ?? new Date()} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} maximumDate={new Date()} minimumDate={new Date(2020, 0, 1)} onChange={(e, d) => { if (Platform.OS !== 'ios') setShowPicker(false); if (d) setBabyDate(d); }} />
+            <CalendarPicker
+              value={babyDate}
+              maxDate={new Date()}
+              minDate={new Date(2020, 0, 1)}
+              onChange={(d) => { setBabyDate(d); setShowPicker(false); }}
+            />
           )}
-          {Platform.OS === 'ios' && showPicker && <Pressable onPress={() => setShowPicker(false)} style={styles.pickerDone}><Text style={styles.pickerDoneText}>Selesai</Text></Pressable>}
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Pressable onPress={handle} style={styles.primaryWrap}>
             <LinearGradient colors={['#2FA0E5', '#0A5A8C']} style={styles.primary}><Text style={styles.primaryText}>Simpan & Lanjutkan</Text></LinearGradient>
@@ -98,8 +98,6 @@ const styles = StyleSheet.create({
   pillIcon: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#EAF0F7', alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, color: colors.ink, fontSize: 13 },
   inputStatic: { flex: 1, color: colors.muted, fontSize: 13 },
-  pickerDone: { alignSelf: 'flex-end', paddingVertical: 6, paddingHorizontal: 12 },
-  pickerDoneText: { color: colors.primary, fontWeight: '800', fontSize: 13 },
   error: { color: colors.danger, fontSize: 12 },
   primaryWrap: { borderRadius: 24, overflow: 'hidden', marginTop: 8, shadowColor: '#0A5A8C', shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 },
   primary: { height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
