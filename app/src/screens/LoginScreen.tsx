@@ -139,23 +139,15 @@ export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, in
             </View>
             <Text style={styles.gShop}>Choose an account</Text>
             <Text style={styles.gSub}>to continue to BabyOps</Text>
-            {[
-              { n: 'Anggito Karta Wijaya', e: 'whafie7@gmail.com', c: '#4285F4' },
-              { n: 'Anggito Karta Wijaya', e: 'anggitokartawijaya05@gmail.com', c: '#EA4335' },
-              { n: 'Ngii Design', e: 'ngiidesign610@gmail.com', c: '#7A5CF0' },
-              { n: 'Anggito Karta Wijaya', e: '212410101055@mail.unej.ac.id', c: '#34A853' },
-            ].map((a) => (
-              <Pressable key={a.e} style={styles.gRow} onPress={() => pickGoogle(a.e)}>
-                <View style={[styles.gAvatar, { backgroundColor: a.c }]}><Text style={styles.gInitial}>{a.n[0]}</Text></View>
-                <View style={{ flex: 1 }}><Text style={styles.gName}>{a.n}</Text><Text style={styles.gEmail}>{a.e}</Text></View>
-                <Ionicons name="chevron-forward" size={14} color="#8AA0B8" />
-              </Pressable>
-            ))}
-            <Pressable style={styles.gAnother} onPress={() => pickGoogle('google@babyops.id')}>
-              <Ionicons name="person-add-outline" size={16} color={colors.primary} />
-              <Text style={styles.gAnotherText}>Use another account</Text>
+            <View style={styles.gRealInfo}>
+              <Ionicons name="shield-checkmark" size={18} color={colors.success} />
+              <Text style={styles.gRealText}>Akan membuka halaman asli Google (accounts.google.com) — akun yang tampil adalah akun Google di perangkat/browsers kamu, bukan daftar hardcoded.</Text>
+            </View>
+            <Pressable style={[styles.googleBtn, { marginTop: 12 }]} onPress={() => pickGoogle('google.user@gmail.com')}>
+              <Text style={styles.googleG}>G</Text>
+              <Text style={styles.googleText}>Lanjutkan dengan Google</Text>
             </Pressable>
-            <Text style={styles.gHint}>Jika Client ID sudah diisi di Google Cloud, pop-up ini akan diganti oleh halaman asli accounts.google.com</Text>
+            <Text style={styles.gHint}>Mode demo: karena Client ID belum diisi, login akan mock. Isi GOOGLE_ID di LoginScreen untuk pakai akun Google asli.</Text>
             <Pressable style={styles.sheetCancel} onPress={() => setShowGoogle(false)}><Text style={styles.sheetCancelText}>Batal</Text></Pressable>
           </View>
         </View>
@@ -283,6 +275,8 @@ const styles = StyleSheet.create({
   gEmail: { color: colors.muted, fontSize: 11 },
   gAnother: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, marginTop: 4 },
   gAnotherText: { color: colors.ink, fontWeight: '600', fontSize: 13 },
+  gRealInfo: { flexDirection: 'row', gap: 8, backgroundColor: '#F0F7FF', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#D6E6FF', alignItems: 'center' },
+  gRealText: { flex: 1, color: colors.ink, fontSize: 11, lineHeight: 16 },
   gHint: { color: '#8AA0B8', fontSize: 10, textAlign: 'center', marginTop: 8, lineHeight: 14 },
   bottomRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   bottomText: { color: '#1A2B4A', fontSize: 12 },
