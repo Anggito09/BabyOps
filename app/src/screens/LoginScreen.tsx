@@ -1,87 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Animated, Easing, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import { colors, gradients, spacing } from '../theme/tokens';
-
-WebBrowser.maybeCompleteAuthSession();
 
 interface Props {
   onLogin: (email: string, password: string) => void;
-  onGoogleLogin?: (email: string) => void;
   onGoRegister: () => void;
   onForgot?: () => void;
   initialError?: string;
 }
 
-export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, initialError = '' }: Props) {
+export function LoginScreen({ onLogin, onGoRegister, onForgot, initialError = '' }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [show, setShow] = useState(false);
   const [error, setError] = useState(initialError);
-  const float = React.useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(float, { toValue: -6, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(float, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-
-  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-  const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-  const configuredClientId =
-    Platform.OS === 'ios'
-      ? googleIosClientId
-      : Platform.OS === 'android'
-        ? googleAndroidClientId
-        : googleWebClientId;
-
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    webClientId: googleWebClientId,
-    iosClientId: googleIosClientId,
-    androidClientId: googleAndroidClientId,
-  });
-
-  useEffect(() => {
-    if (response?.type !== 'success') return;
-    const idToken = response.params?.id_token;
-    if (!idToken) {
-      setError('Google tidak mengirimkan token identitas. Silakan coba kembali.');
-      return;
-    }
-
-    try {
-      const payload = idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      const profile = JSON.parse(atob(payload));
-      if (!profile.email || profile.email_verified === false) {
-        setError('Email Google belum terverifikasi.');
-        return;
-      }
-      setError('');
-      onGoogleLogin?.(String(profile.email).trim().toLowerCase());
-    } catch {
-      setError('Profil Google tidak dapat dibaca. Silakan coba kembali.');
-    }
-  }, [response, onGoogleLogin]);
-
-  const handleGoogle = async () => {
-    if (!configuredClientId) {
-      setError('Login Google belum dikonfigurasi. Tambahkan Google OAuth Client ID pada environment aplikasi.');
-      return;
-    }
-    if (!request) {
-      setError('Login Google sedang disiapkan. Silakan coba beberapa saat lagi.');
-      return;
-    }
-    setError('');
-    await promptAsync();
-  };
 
   const handle = () => {
     if (!email.includes('@') || password.length < 6) {
@@ -146,25 +81,12 @@ export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, in
             </LinearGradient>
           </Pressable>
 
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>ATAU</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <Pressable style={styles.googleBtn} onPress={handleGoogle}>
-            <Text style={styles.googleG}>G</Text>
-            <Text style={styles.googleText}>Google</Text>
-          </Pressable>
-          <Text style={styles.googleHint}>Masuk dengan Google — akun asli akan tampil di pop-up Google</Text>
-
           <View style={styles.bottomRow}>
             <Text style={styles.bottomText}>Don&apos;t have an account? </Text>
             <Pressable onPress={onGoRegister}><Text style={styles.bottomLink}>Sign Up</Text></Pressable>
           </View>
         </View>
       </ScrollView>
-
     </LinearGradient>
   );
 }
@@ -241,56 +163,6 @@ const styles = StyleSheet.create({
   primaryWrap: { borderRadius: 24, overflow: 'hidden', marginTop: 6, shadowColor: '#0A5A8C', shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 },
   primary: { height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   primaryText: { color: colors.white, fontSize: 16, fontWeight: '800' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 4 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#8AA0B8' },
-  dividerText: { color: '#6B7C93', fontSize: 11 },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    height: 46,
-    borderRadius: 24,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: '#E6EDF3',
-    shadowColor: '#0A3A5A',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  googleG: { color: '#EA4335', fontSize: 18, fontWeight: '900' },
-  googleText: { color: '#6B7C93', fontSize: 13, fontWeight: '600' },
-  googleHint: { color: '#8AA0B8', fontSize: 10, textAlign: 'center', marginTop: -2 },
-  sheetOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.38)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 24, maxHeight: '78%' },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#D6E6FF', alignSelf: 'center', marginBottom: 12 },
-  sheetHeader: { marginBottom: 10 },
-  sheetTitle: { fontSize: 16, fontWeight: '900', color: colors.ink },
-  sheetSub: { fontSize: 12, color: colors.muted, marginTop: 4 },
-  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EDF2F4' },
-  accountAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EAF0F7', alignItems: 'center', justifyContent: 'center' },
-  accountInitial: { color: colors.primary, fontWeight: '900' },
-  accountName: { color: colors.ink, fontWeight: '700', fontSize: 13 },
-  accountEmail: { color: colors.muted, fontSize: 11 },
-  sheetCancel: { marginTop: 14, height: 44, borderRadius: 12, backgroundColor: '#F0F2F5', alignItems: 'center', justifyContent: 'center' },
-  sheetCancelText: { color: colors.ink, fontWeight: '700' },
-  sheetHint: { color: colors.muted, fontSize: 10, textAlign: 'center', marginTop: 8, lineHeight: 14 },
-  gSheetHeader: { alignItems: 'center', marginBottom: 8 },
-  gLogo: { fontSize: 22, fontWeight: '900', color: '#4285F4' },
-  gTitle: { fontSize: 14, fontWeight: '800', color: colors.ink, marginTop: 4 },
-  gShop: { fontSize: 18, fontWeight: '900', color: colors.ink, marginTop: 8 },
-  gSub: { fontSize: 12, color: colors.muted, marginBottom: 8 },
-  gRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F2F4' },
-  gAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  gInitial: { color: colors.white, fontWeight: '900', fontSize: 14 },
-  gName: { color: colors.ink, fontSize: 13, fontWeight: '700' },
-  gEmail: { color: colors.muted, fontSize: 11 },
-  gAnother: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, marginTop: 4 },
-  gAnotherText: { color: colors.ink, fontWeight: '600', fontSize: 13 },
-  gRealInfo: { flexDirection: 'row', gap: 8, backgroundColor: '#F0F7FF', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#D6E6FF', alignItems: 'center' },
-  gRealText: { flex: 1, color: colors.ink, fontSize: 11, lineHeight: 16 },
-  gHint: { color: '#8AA0B8', fontSize: 10, textAlign: 'center', marginTop: 8, lineHeight: 14 },
   bottomRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   bottomText: { color: '#1A2B4A', fontSize: 12 },
   bottomLink: { color: '#2FA0E5', fontSize: 12, fontWeight: '800' },

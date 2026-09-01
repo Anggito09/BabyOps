@@ -4,17 +4,42 @@
     "slug": "babyops",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "babyops",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "plugins": ["expo-router"],
-    "experiments": {
-      "typedRoutes": true
+    "backgroundColor": "#05497B",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anggito.babyops"
     },
     "android": {
-      "package": "com.anggito09.babyops"
+      "package": "com.anggito.babyops",
+      "adaptiveIcon": {
+        "backgroundColor": "#2B9BEC",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
-    "ios": {
-      "bundleIdentifier": "com.anggito09.babyops"
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-audio",
+      "expo-status-bar",
+      "expo-asset"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7e8f57ef-7d2d-4e5c-af61-ede41716c8e7"
+      }
     }
   }
 }
