@@ -25,6 +25,8 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
   const babyDob = babyDate ? formatDate(babyDate) : '';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
 
   const handle = () => {
@@ -84,13 +86,15 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
           <Text style={styles.label}>Password</Text>
           <View style={styles.pill}>
             <View style={styles.pillIcon}><Ionicons name="lock-closed" size={14} color="#7A8CA8" /></View>
-            <TextInput placeholder="masukkan password" placeholderTextColor="#8FA0B8" value={password} onChangeText={setPassword} secureTextEntry style={styles.input} />
+            <TextInput placeholder="masukkan password" placeholderTextColor="#8FA0B8" value={password} onChangeText={setPassword} secureTextEntry={!showPass} style={styles.input} />
+            <Pressable onPress={() => setShowPass(!showPass)} hitSlop={8}><Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={18} color="#7A8CA8" /></Pressable>
           </View>
 
           <Text style={styles.label}>Confirm Password</Text>
           <View style={styles.pill}>
             <View style={styles.pillIcon}><Ionicons name="lock-closed" size={14} color="#7A8CA8" /></View>
-            <TextInput placeholder="masukkan confirm password" placeholderTextColor="#8FA0B8" value={confirm} onChangeText={setConfirm} secureTextEntry style={styles.input} />
+            <TextInput placeholder="masukkan confirm password" placeholderTextColor="#8FA0B8" value={confirm} onChangeText={setConfirm} secureTextEntry={!showConfirm} style={styles.input} />
+            <Pressable onPress={() => setShowConfirm(!showConfirm)} hitSlop={8}><Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={18} color="#7A8CA8" /></Pressable>
           </View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}

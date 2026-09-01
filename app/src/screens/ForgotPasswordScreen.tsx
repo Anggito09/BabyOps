@@ -18,6 +18,8 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
   const [expectedCode, setExpectedCode] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [info, setInfo] = useState('');
   const [error, setError] = useState('');
 
@@ -95,12 +97,14 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
               <Text style={styles.label}>Password baru</Text>
               <View style={styles.pill}>
                 <View style={styles.pillIcon}><Ionicons name="lock-closed" size={14} color="#7A8CA8" /></View>
-                <TextInput placeholder="min. 6 karakter" placeholderTextColor="#8FA0B8" value={newPass} onChangeText={setNewPass} secureTextEntry style={styles.input} />
+                <TextInput placeholder="min. 6 karakter" placeholderTextColor="#8FA0B8" value={newPass} onChangeText={setNewPass} secureTextEntry={!showNew} style={styles.input} />
+                <Pressable onPress={() => setShowNew(!showNew)} hitSlop={8}><Ionicons name={showNew ? 'eye-off-outline' : 'eye-outline'} size={18} color="#7A8CA8" /></Pressable>
               </View>
               <Text style={styles.label}>Konfirmasi password</Text>
               <View style={styles.pill}>
                 <View style={styles.pillIcon}><Ionicons name="lock-closed" size={14} color="#7A8CA8" /></View>
-                <TextInput placeholder="ulangi password" placeholderTextColor="#8FA0B8" value={confirm} onChangeText={setConfirm} secureTextEntry style={styles.input} />
+                <TextInput placeholder="ulangi password" placeholderTextColor="#8FA0B8" value={confirm} onChangeText={setConfirm} secureTextEntry={!showConfirm} style={styles.input} />
+                <Pressable onPress={() => setShowConfirm(!showConfirm)} hitSlop={8}><Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={18} color="#7A8CA8" /></Pressable>
               </View>
               <Text style={styles.hint}>Setelah berhasil, notifikasi perubahan password dikirim ke email Anda.</Text>
             </>
