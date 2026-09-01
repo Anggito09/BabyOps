@@ -5,15 +5,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { articles } from '../data/articles';
 import { colors, gradients, radius, shadow, spacing } from '../theme/tokens';
 import { TabKey } from '../components/BottomNav';
+import { DiagnosisHistoryEntry } from '../../App';
 
 interface Props {
   userName?: string;
   babyAge?: string;
+  history?: DiagnosisHistoryEntry[];
   onNavigate: (tab: TabKey) => void;
   onRecord: () => void;
 }
 
-export function HomeScreen({ userName, babyAge = '03', onNavigate, onRecord }: Props) {
+export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate, onRecord }: Props) {
   const displayName = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : 'Anggito Karta Wijaya';
   const cardIn = useRef(new Animated.Value(30)).current;
   const cardFade = useRef(new Animated.Value(0)).current;
@@ -47,13 +49,35 @@ export function HomeScreen({ userName, babyAge = '03', onNavigate, onRecord }: P
           {/* Disease History — pink FDE5E4 */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Riwayat Kesehatan</Text>
-            <Text style={styles.date}>24/07/2026</Text>
+            <Text style={styles.date}>{history.length > 0 ? history[0].date : '—'}</Text>
           </View>
-          <Pressable style={styles.historyCard} onPress={() => onNavigate('diagnosis')}>
-            <Text style={styles.historyTitle}>Bronkiolitis</Text>
-            <Text style={styles.historyBody}>Bronkiolitis adalah suatu infeksi virus pada saluran pernapasan kecil yang umumnya terjadi pada bayi.</Text>
-            <Text style={styles.more}>Baca selengkapnya →</Text>
-          </Pressable>
+          {history.length === 0 ? (
+            <View style={styles.emptyHistoryCard}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="document-text-outline" size={28} color={colors.muted} />
+              </View>
+              <Text style={styles.emptyTitle}>Belum ada riwayat Diagnosa</Text>
+              <Text style={styles.emptyBody}>Pengguna baru belum memiliki riwayat. Coba fitur Diagnosis untuk cek gejala bayi — hasilnya akan tampil di sini.</Text>
+              <Pressable style={styles.emptyCta} onPress={() => onNavigate('diagnosis')}>
+                <Text style={styles.emptyCtaText}>Mulai Cek Gejala</Text>
+                <Ionicons name="arrow-forward" size={14} color={colors.white} />
+              </Pressable>
+            </View>
+          ) : (
+            history.slice(0, 2).map((h) => (
+              <Pressable key={h.id} style={styles.historyCard} onPress={() => onNavigate('diagnosis')}>
+                <View style={styles.historyTopRow}>
+                  <Text style={styles.historyEmoji}>{h.emoji}</Text>
+                  <View style={[styles.severityMini, { backgroundColor: h.severity === 'perlu perhatian' ? '#FFD9D5' : h.severity === 'sedang' ? '#FFF0D1' : '#E0F5E4' }]}>
+                    <Text style={[styles.severityMiniText, { color: h.severity === 'perlu perhatian' ? '#C33932' : h.severity === 'sedang' ? '#8A6A00' : '#1B7A3D' }]}>{h.severity}</Text>
+                  </View>
+                </View>
+                <Text style={styles.historyTitle}>{h.conditionName}</Text>
+                <Text style={styles.historyBody} numberOfLines={2}>{h.description}</Text>
+                <Text style={styles.more}>{h.date} • {h.matchedSymptoms} gejala →</Text>
+              </Pressable>
+            ))
+          )}
 
           {/* Quick actions — ReKam / Cek gejala */}
           <View style={styles.quickRow}>
@@ -147,8 +171,43 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FFE4E8',
   },
-  historyTitle: { fontSize: 18, fontWeight: '900', color: colors.ink, marginBottom: 5, letterSpacing: -0.3 },
-  historyBody: { fontSize: 13, color: colors.muted, lineHeight: 19, fontWeight: '500' },
+  emptyHistoryCard: {
+    backgroundColor: '#F0F7FF',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#D6E6FF',
+    borderStyle: 'dashed',
+    gap: 8,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: { fontSize: 15, fontWeight: '900', color: colors.ink, textAlign: 'center' },
+  emptyBody: { fontSize: 12, color: colors.muted, lineHeight: 18, textAlign: 'center' },
+  emptyCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 14,
+    marginTop: 4,
+  },
+  emptyCtaText: { color: colors.white, fontSize: 12, fontWeight: '800' },
+  historyTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  historyEmoji: { fontSize: 22 },
+  severityMini: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  severityMiniText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+  historyTitle: { fontSize: 16, fontWeight: '900', color: colors.ink, marginBottom: 4, letterSpacing: -0.3 },
+  historyBody: { fontSize: 12, color: colors.muted, lineHeight: 18, fontWeight: '500' },
   more: { alignSelf: 'flex-end', fontSize: 11, color: colors.githubDark, fontWeight: '800', marginTop: 8 },
   quickRow: { flexDirection: 'row', gap: 12 },
   quickCard: {

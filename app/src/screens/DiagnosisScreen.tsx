@@ -7,13 +7,28 @@ import { conditions, symptomCategories, SymptomCategory } from '../data/symptoms
 import { runForwardChaining } from '../model/forwardChaining';
 import { colors, font, radius, shadow, spacing } from '../theme/tokens';
 
-export function DiagnosisScreen() {
+interface Props {
+  onSaveHistory?: (entry: { conditionName: string; description: string; severity: string; emoji: string; matchedSymptoms: number }) => void;
+}
+
+export function DiagnosisScreen({ onSaveHistory }: Props) {
   const [activeCategory, setActiveCategory] = useState<SymptomCategory | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [showResult, setShowResult] = useState(false);
 
   const outcome = useMemo(() => runForwardChaining(selected), [selected]);
   const condition = conditions[outcome.condition];
+
+  const handleShowResult = () => {
+    setShowResult(true);
+    onSaveHistory?.({
+      conditionName: condition.name,
+      description: condition.description,
+      severity: condition.severity,
+      emoji: condition.emoji,
+      matchedSymptoms: selected.length,
+    });
+  };
 
   const toggle = (id: string) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
@@ -122,7 +137,7 @@ export function DiagnosisScreen() {
           </View>
 
           {selected.length > 0 && (
-            <GradientButton label="Jalankan Screening" onPress={() => setShowResult(true)} style={styles.cta} />
+            <GradientButton label="Jalankan Screening" onPress={handleShowResult} style={styles.cta} />
           )}
         </View>
       </ScrollView>

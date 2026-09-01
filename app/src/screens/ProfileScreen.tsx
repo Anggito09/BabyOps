@@ -7,11 +7,13 @@ import { colors, gradients, spacing } from '../theme/tokens';
 interface Props {
   user?: { name: string; email: string; babyDob?: string } | null;
   babyAge?: string;
+  historyCount?: number;
   onLogout: () => void;
   onLogin: () => void;
 }
 
-export function ProfileScreen({ user, babyAge = '03', onLogout, onLogin }: Props) {
+export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout, onLogin }: Props) {
+  const isNewUser = historyCount === 0;
   return (
     <LinearGradient colors={[...gradients.github]} style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -19,6 +21,10 @@ export function ProfileScreen({ user, babyAge = '03', onLogout, onLogin }: Props
           <View style={styles.avatar}><Text style={styles.avatarEmoji}>👨‍👩‍👦</Text></View>
           <Text style={styles.name}>{user?.name ?? 'Anggito Karta Wijaya'}</Text>
           <Text style={styles.sub}>{user?.email ?? 'Orang tua dari bayi usia ' + babyAge + ' bulan'}{user?.babyDob ? ' • lahir ' + user.babyDob : ''}</Text>
+          <View style={[styles.badge, isNewUser ? styles.badgeNew : styles.badgeOld]}>
+            <Ionicons name={isNewUser ? 'sparkles' : 'checkmark-circle'} size={14} color={isNewUser ? '#2FA0E5' : '#1B7A3D'} />
+            <Text style={[styles.badgeText, { color: isNewUser ? '#2FA0E5' : '#1B7A3D' }]}>{isNewUser ? 'Pengguna Baru • Belum ada riwayat' : `Pengguna Lama • ${historyCount} riwayat`}</Text>
+          </View>
           <View style={styles.card}>
             {[
               ['person', 'Data orang tua'],
@@ -57,7 +63,19 @@ const styles = StyleSheet.create({
   },
   avatarEmoji: { fontSize: 48 },
   name: { color: colors.white, fontSize: 20, fontWeight: '900', marginTop: 8 },
-  sub: { color: '#D5EFF9', fontSize: 12 },
+  sub: { color: '#D5EFF9', fontSize: 12, textAlign: 'center' },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginTop: 6,
+  },
+  badgeNew: { backgroundColor: '#EAF4FF' },
+  badgeOld: { backgroundColor: '#E6F7ED' },
+  badgeText: { fontSize: 11, fontWeight: '800' },
   card: {
     backgroundColor: colors.white,
     borderRadius: 20,

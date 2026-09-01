@@ -15,6 +15,16 @@ import { BottomNav, TabKey } from './src/components/BottomNav';
 import { colors } from './src/theme/tokens';
 import { CryPrediction } from './src/model/cryClassifier';
 
+export interface DiagnosisHistoryEntry {
+  id: string;
+  conditionName: string;
+  description: string;
+  severity: string;
+  emoji: string;
+  date: string;
+  matchedSymptoms: number;
+}
+
 type Route =
   | { name: 'splash' }
   | { name: 'onboarding' }
@@ -38,6 +48,7 @@ function getAgeMonths(dobStr?: string): string {
 export default function App() {
   const [route, setRoute] = useState<Route>({ name: 'splash' });
   const [user, setUser] = useState<{ name: string; email: string; babyDob?: string } | null>(null);
+  const [history, setHistory] = useState<DiagnosisHistoryEntry[]>([]);
 
   const goMain = (tab: TabKey = 'home') => setRoute({ name: 'main', tab });
   const handleLogin = (email: string) => {
@@ -50,7 +61,17 @@ export default function App() {
   };
   const handleLogout = () => {
     setUser(null);
+    setHistory([]);
     setRoute({ name: 'login' });
+  };
+
+  const addHistory = (entry: Omit<DiagnosisHistoryEntry, 'id' | 'date'>) => {
+    const newEntry: DiagnosisHistoryEntry = {
+      ...entry,
+      id: String(Date.now()),
+      date: new Date().toLocaleDateString('id-ID'),
+    };
+    setHistory((prev) => [newEntry, ...prev].slice(0, 10));
   };
 
   if (route.name === 'splash') {
@@ -117,10 +138,10 @@ export default function App() {
   const babyAge = getAgeMonths(user?.babyDob);
   return (
     <SafeAreaView style={styles.safe}>
-      {route.tab === 'home' && <HomeScreen userName={user?.name} babyAge={babyAge} onNavigate={(tab) => goMain(tab)} onRecord={() => setRoute({ name: 'record' })} />}
-      {route.tab === 'diagnosis' && <DiagnosisScreen />}
+      {route.tab === 'home' && <HomeScreen userName={user?.name} babyAge={babyAge} history={history} onNavigate={(tab) => goMain(tab)} onRecord={() => setRoute({ name: 'record' })} />}
+      {route.tab === 'diagnosis' && <DiagnosisScreen onSaveHistory={addHistory} />}
       {route.tab === 'education' && <EducationScreen />}
-      {route.tab === 'profile' && <ProfileScreen user={user} babyAge={babyAge} onLogout={handleLogout} onLogin={() => setRoute({ name: 'login' })} />}
+      {route.tab === 'profile' && <ProfileScreen user={user} babyAge={babyAge} historyCount={history.length} onLogout={handleLogout} onLogin={() => setRoute({ name: 'login' })} />}
       <BottomNav
         active={route.tab}
         onChange={(tab) => goMain(tab)}

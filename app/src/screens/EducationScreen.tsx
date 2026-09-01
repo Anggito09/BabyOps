@@ -27,6 +27,17 @@ export function EducationScreen() {
             {open.body.map((paragraph, i) => (
               <Text key={i} style={styles.detailBody}>{paragraph}</Text>
             ))}
+            {open.sources && open.sources.length > 0 && (
+              <View style={styles.sourcesBox}>
+                <Text style={styles.sourcesTitle}>Sumber Real & Fakta</Text>
+                {open.sources.map((s, idx) => (
+                  <View key={idx} style={styles.sourceRow}>
+                    <Text style={styles.sourceDot}>•</Text>
+                    <Text style={styles.sourceText}>{s}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </ScrollView>
       </View>
@@ -141,4 +152,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     textAlign: 'justify',
   },
+  sourcesBox: {
+    backgroundColor: '#F0F7FF',
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginTop: spacing.xl,
+    borderWidth: 1,
+    borderColor: '#D6E6FF',
+  },
+  sourcesTitle: { color: colors.ink, fontSize: font.small, fontWeight: '900', marginBottom: 6 },
+  sourceRow: { flexDirection: 'row', gap: 6, marginTop: 4 },
+  sourceDot: { color: colors.primary, fontSize: font.small, fontWeight: '900' },
+  sourceText: { flex: 1, color: colors.muted, fontSize: font.tiny, lineHeight: 17 },
 });
