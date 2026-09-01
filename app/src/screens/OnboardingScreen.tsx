@@ -42,24 +42,31 @@ export function OnboardingScreen({ onFinish }: Props) {
   const slideX = useRef(new Animated.Value(0)).current;
   const bubbleScale = useRef(new Animated.Value(1)).current;
   const float = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(float, { toValue: -6, duration: 1300, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(float, { toValue: 0, duration: 1300, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(float, { toValue: -10, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(float, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ])
+    ).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.08, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       ])
     ).start();
   }, []);
 
   useEffect(() => {
     fade.setValue(0);
-    slideX.setValue(18);
-    bubbleScale.setValue(0.85);
+    slideX.setValue(22);
+    bubbleScale.setValue(0.8);
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 420, useNativeDriver: true }),
-      Animated.timing(slideX, { toValue: 0, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.spring(bubbleScale, { toValue: 1, friction: 6, useNativeDriver: true }),
+      Animated.timing(fade, { toValue: 1, duration: 380, useNativeDriver: true }),
+      Animated.timing(slideX, { toValue: 0, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.spring(bubbleScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
     ]).start();
   }, [index]);
 
@@ -82,12 +89,12 @@ export function OnboardingScreen({ onFinish }: Props) {
           <Text style={styles.bubbleText}>{slide.bubble}</Text>
         </Animated.View>
         <Animated.View style={[styles.heroCircleWrap, { transform: [{ translateY: float }] }]}>
-          <View style={styles.heroCircleBg} />
+          <Animated.View style={[styles.heroCircleBg, { transform: [{ scale: pulse }] }]} />
           <View style={styles.heroCircle}>
             <Image source={slideImages[index]} style={styles.heroImage} resizeMode="contain" />
           </View>
-          <Ionicons name="leaf" size={18} color="rgba(255,255,255,0.55)" style={styles.leafLeft} />
-          <Ionicons name="leaf" size={14} color="rgba(255,255,255,0.4)" style={styles.leafRight} />
+          <Ionicons name="leaf" size={20} color="rgba(255,255,255,0.6)" style={styles.leafLeft} />
+          <Ionicons name="leaf" size={16} color="rgba(255,255,255,0.45)" style={styles.leafRight} />
         </Animated.View>
       </Animated.View>
 
@@ -121,69 +128,78 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
   },
-  logoImage: { width: 110, height: 28, tintColor: colors.white },
-  skipText: { color: colors.white, fontSize: font.small, fontWeight: '700' },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: spacing.lg, gap: 8 },
+  logoImage: { width: 128, height: 32, tintColor: colors.white },
+  skipText: { color: colors.white, fontSize: 14, fontWeight: '800', letterSpacing: 0.3 },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: spacing.md, gap: 10 },
   bubble: {
     backgroundColor: colors.white,
-    paddingHorizontal: 22,
-    paddingVertical: 11,
+    paddingHorizontal: 26,
+    paddingVertical: 13,
     borderRadius: 25,
-    marginBottom: 4,
+    marginBottom: 6,
     shadowColor: '#064B70',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 5,
   },
-  bubbleText: { fontSize: 22, fontWeight: '900', color: colors.ink },
-  heroCircleWrap: { width: 200, height: 200, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+  bubbleText: { fontSize: 24, fontWeight: '900', color: colors.ink, letterSpacing: -0.3 },
+  heroCircleWrap: { width: 280, height: 280, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   heroCircleBg: {
     position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
   heroCircle: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#064B70',
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  heroImage: { width: 130, height: 130 },
-  leafLeft: { position: 'absolute', left: 6, top: 34, transform: [{ rotate: '-18deg' }] },
-  leafRight: { position: 'absolute', right: 10, bottom: 42, transform: [{ rotate: '22deg' }] },
+  heroImage: { width: 190, height: 190 },
+  leafLeft: { position: 'absolute', left: 8, top: 38, transform: [{ rotate: '-18deg' }] },
+  leafRight: { position: 'absolute', right: 12, bottom: 48, transform: [{ rotate: '22deg' }] },
   card: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 34,
     borderTopRightRadius: 34,
-    padding: spacing.xl,
-    paddingBottom: 36,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 22,
+    paddingBottom: 28,
   },
-  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 7, marginBottom: spacing.md },
-  dot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: '#CFE0E7' },
-  dotActive: { width: 22, backgroundColor: colors.primary },
-  title: { fontSize: 25, fontWeight: '900', color: colors.ink, textAlign: 'center' },
+  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 14 },
+  dot: { width: 8, height: 8, borderRadius: radius.pill, backgroundColor: '#CFE0E7' },
+  dotActive: { width: 26, backgroundColor: colors.primary },
+  title: {
+    fontSize: 27,
+    fontWeight: '900',
+    color: colors.ink,
+    textAlign: 'center',
+    letterSpacing: -0.6,
+    lineHeight: 32,
+  },
   desc: {
     color: colors.muted,
     textAlign: 'center',
-    lineHeight: 21,
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
-    fontSize: font.body,
+    lineHeight: 22,
+    marginTop: 8,
+    marginBottom: 18,
+    fontSize: 14,
+    fontWeight: '500',
   },
-  cta: { borderRadius: radius.md, overflow: 'hidden' },
+  cta: { borderRadius: 16, overflow: 'hidden', shadowColor: colors.primaryDark, shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 },
   ctaGradient: {
-    height: 52,
-    borderRadius: radius.md,
+    height: 56,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaText: { color: colors.white, fontWeight: '800', fontSize: font.body },
+  ctaText: { color: colors.white, fontWeight: '900', fontSize: 15, letterSpacing: 0.3 },
 });
