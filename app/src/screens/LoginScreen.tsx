@@ -1,22 +1,51 @@
-import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { colors, gradients, spacing } from '../theme/tokens';
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface Props {
   onLogin: (email: string, password: string) => void;
+  onGoogleLogin?: (email: string) => void;
   onGoRegister: () => void;
   onForgot?: () => void;
   initialError?: string;
 }
 
-export function LoginScreen({ onLogin, onGoRegister, onForgot, initialError = '' }: Props) {
+export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, initialError = '' }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [show, setShow] = useState(false);
   const [error, setError] = useState(initialError);
+  const [showGoogle, setShowGoogle] = useState(false);
+  const float = React.useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, { toValue: -6, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(float, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  const GOOGLE_ID = '1080000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com';
+  const isPlaceholder = GOOGLE_ID.includes('xxxx');
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({ clientId: GOOGLE_ID });
+  useEffect(() => {
+    if (response?.type === 'success') onGoogleLogin?.('google.user@gmail.com');
+  }, [response]);
+
+  const handleGoogle = async () => {
+    if (isPlaceholder) { setShowGoogle(true); return; }
+    try { const r = await promptAsync(); if (r?.type === 'success') return; } catch {}
+    setShowGoogle(true);
+  };
+  const pickGoogle = (em: string) => { setShowGoogle(false); onGoogleLogin?.(em); };
 
   const handle = () => {
     if (!email.includes('@') || password.length < 6) {
@@ -81,12 +110,56 @@ export function LoginScreen({ onLogin, onGoRegister, onForgot, initialError = ''
             </LinearGradient>
           </Pressable>
 
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>ATAU</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <Pressable style={styles.googleBtn} onPress={handleGoogle}>
+            <Text style={styles.googleG}>G</Text>
+            <Text style={styles.googleText}>Google</Text>
+          </Pressable>
+          <Text style={styles.googleHint}>Masuk dengan Google — akun asli akan tampil di pop-up Google</Text>
+
           <View style={styles.bottomRow}>
             <Text style={styles.bottomText}>Don&apos;t have an account? </Text>
             <Pressable onPress={onGoRegister}><Text style={styles.bottomLink}>Sign Up</Text></Pressable>
           </View>
         </View>
       </ScrollView>
+
+      {showGoogle && (
+        <View style={styles.sheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowGoogle(false)} />
+          <View style={styles.sheet}>
+            <View style={styles.gSheetHeader}>
+              <Text style={styles.gLogo}>G</Text>
+              <Text style={styles.gTitle}>Sign in with Google</Text>
+            </View>
+            <Text style={styles.gShop}>Choose an account</Text>
+            <Text style={styles.gSub}>to continue to BabyOps</Text>
+            {[
+              { n: 'Anggito Karta Wijaya', e: 'whafie7@gmail.com', c: '#4285F4' },
+              { n: 'Anggito Karta Wijaya', e: 'anggitokartawijaya05@gmail.com', c: '#EA4335' },
+              { n: 'Ngii Design', e: 'ngiidesign610@gmail.com', c: '#7A5CF0' },
+              { n: 'Anggito Karta Wijaya', e: '212410101055@mail.unej.ac.id', c: '#34A853' },
+            ].map((a) => (
+              <Pressable key={a.e} style={styles.gRow} onPress={() => pickGoogle(a.e)}>
+                <View style={[styles.gAvatar, { backgroundColor: a.c }]}><Text style={styles.gInitial}>{a.n[0]}</Text></View>
+                <View style={{ flex: 1 }}><Text style={styles.gName}>{a.n}</Text><Text style={styles.gEmail}>{a.e}</Text></View>
+                <Ionicons name="chevron-forward" size={14} color="#8AA0B8" />
+              </Pressable>
+            ))}
+            <Pressable style={styles.gAnother} onPress={() => pickGoogle('google@babyops.id')}>
+              <Ionicons name="person-add-outline" size={16} color={colors.primary} />
+              <Text style={styles.gAnotherText}>Use another account</Text>
+            </Pressable>
+            <Text style={styles.gHint}>Jika Client ID sudah diisi di Google Cloud, pop-up ini akan diganti oleh halaman asli accounts.google.com</Text>
+            <Pressable style={styles.sheetCancel} onPress={() => setShowGoogle(false)}><Text style={styles.sheetCancelText}>Batal</Text></Pressable>
+          </View>
+        </View>
+      )}
     </LinearGradient>
   );
 }
@@ -184,10 +257,10 @@ const styles = StyleSheet.create({
   googleG: { color: '#EA4335', fontSize: 18, fontWeight: '900' },
   googleText: { color: '#6B7C93', fontSize: 13, fontWeight: '600' },
   googleHint: { color: '#8AA0B8', fontSize: 10, textAlign: 'center', marginTop: -2 },
-  sheetOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28 },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#D6E6FF', alignSelf: 'center', marginBottom: 14 },
-  sheetHeader: { marginBottom: 14 },
+  sheetOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.38)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 24, maxHeight: '78%' },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#D6E6FF', alignSelf: 'center', marginBottom: 12 },
+  sheetHeader: { marginBottom: 10 },
   sheetTitle: { fontSize: 16, fontWeight: '900', color: colors.ink },
   sheetSub: { fontSize: 12, color: colors.muted, marginTop: 4 },
   accountRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EDF2F4' },
@@ -198,6 +271,19 @@ const styles = StyleSheet.create({
   sheetCancel: { marginTop: 14, height: 44, borderRadius: 12, backgroundColor: '#F0F2F5', alignItems: 'center', justifyContent: 'center' },
   sheetCancelText: { color: colors.ink, fontWeight: '700' },
   sheetHint: { color: colors.muted, fontSize: 10, textAlign: 'center', marginTop: 8, lineHeight: 14 },
+  gSheetHeader: { alignItems: 'center', marginBottom: 8 },
+  gLogo: { fontSize: 22, fontWeight: '900', color: '#4285F4' },
+  gTitle: { fontSize: 14, fontWeight: '800', color: colors.ink, marginTop: 4 },
+  gShop: { fontSize: 18, fontWeight: '900', color: colors.ink, marginTop: 8 },
+  gSub: { fontSize: 12, color: colors.muted, marginBottom: 8 },
+  gRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F2F4' },
+  gAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  gInitial: { color: colors.white, fontWeight: '900', fontSize: 14 },
+  gName: { color: colors.ink, fontSize: 13, fontWeight: '700' },
+  gEmail: { color: colors.muted, fontSize: 11 },
+  gAnother: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, marginTop: 4 },
+  gAnotherText: { color: colors.ink, fontWeight: '600', fontSize: 13 },
+  gHint: { color: '#8AA0B8', fontSize: 10, textAlign: 'center', marginTop: 8, lineHeight: 14 },
   bottomRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   bottomText: { color: '#1A2B4A', fontSize: 12 },
   bottomLink: { color: '#2FA0E5', fontSize: 12, fontWeight: '800' },
