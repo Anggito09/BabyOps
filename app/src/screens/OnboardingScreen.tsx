@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, font, gradients, radius, spacing } from '../theme/tokens';
 
 interface Props {
@@ -56,7 +57,14 @@ export function OnboardingScreen({ onFinish }: Props) {
         <View style={styles.bubble}>
           <Text style={styles.bubbleText}>{slide.bubble}</Text>
         </View>
-        <Text style={styles.heroEmoji}>{slide.emoji}</Text>
+        <View style={styles.heroCircleWrap}>
+          <View style={styles.heroCircleBg} />
+          <View style={styles.heroCircle}>
+            <Text style={styles.heroEmoji}>{slide.emoji}</Text>
+          </View>
+          <Ionicons name="leaf" size={18} color="rgba(255,255,255,0.55)" style={styles.leafLeft} />
+          <Ionicons name="leaf" size={14} color="rgba(255,255,255,0.4)" style={styles.leafRight} />
+        </View>
       </View>
 
       <View style={styles.card}>
@@ -102,16 +110,42 @@ const styles = StyleSheet.create({
   },
   logoEmoji: { fontSize: 12 },
   skipText: { color: colors.white, fontSize: font.small, fontWeight: '700' },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: spacing.lg },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: spacing.lg, gap: 8 },
   bubble: {
     backgroundColor: colors.white,
     paddingHorizontal: 22,
     paddingVertical: 11,
     borderRadius: 25,
-    marginBottom: 12,
+    marginBottom: 4,
+    shadowColor: '#064B70',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   bubbleText: { fontSize: 22, fontWeight: '900', color: colors.ink },
-  heroEmoji: { fontSize: 112 },
+  heroCircleWrap: { width: 200, height: 200, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+  heroCircleBg: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  heroCircle: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#064B70',
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  heroEmoji: { fontSize: 76 },
+  leafLeft: { position: 'absolute', left: 6, top: 34, transform: [{ rotate: '-18deg' }] },
+  leafRight: { position: 'absolute', right: 10, bottom: 42, transform: [{ rotate: '22deg' }] },
   card: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 34,

@@ -7,11 +7,12 @@ import { colors, font, gradients, radius, shadow, spacing } from '../theme/token
 import { TabKey } from '../components/BottomNav';
 
 interface Props {
+  userName?: string;
   onNavigate: (tab: TabKey) => void;
   onRecord: () => void;
 }
 
-export function HomeScreen({ onNavigate, onRecord }: Props) {
+export function HomeScreen({ userName, onNavigate, onRecord }: Props) {
   return (
     <LinearGradient colors={[...gradients.github]} style={styles.gradient}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -32,7 +33,7 @@ export function HomeScreen({ onNavigate, onRecord }: Props) {
 
         <View style={styles.greetBlock}>
           <Text style={styles.hello}>Selamat pagi, Parents!</Text>
-          <Text style={styles.name}>Anggito Karta Wijaya</Text>
+          <Text style={styles.name}>{userName ? userName : 'Anggito Karta Wijaya'}</Text>
         </View>
 
         {/* White content card — rounded top seperti di screenshot */}
@@ -67,15 +68,21 @@ export function HomeScreen({ onNavigate, onRecord }: Props) {
           <Text style={styles.sectionTitle}>Edukasi Pilihan</Text>
           <View style={styles.educGrid}>
             {[
-              { color: '#7A42B7', title: 'Menyusui perkuat imunitas bayi' },
-              { color: '#2778D2', title: 'Hal penting setelah bayi lahir' },
-              { color: '#EC637D', title: 'Panduan tidur aman untuk bayi' },
-              { color: '#2B9BEC', title: articles[0]?.title ?? 'Mengenal 5 Bahasa Tangisan Bayi' },
+              { color: '#7A42B7', icon: 'medical' as const, title: 'Menyusui perkuat imunitas bayi' },
+              { color: '#2778D2', icon: 'heart' as const, title: 'Hal penting setelah bayi lahir' },
+              { color: '#EC637D', icon: 'moon' as const, title: 'Panduan tidur aman untuk bayi' },
+              { color: '#2B9BEC', icon: 'chatbubble-ellipses' as const, title: articles[0]?.title ?? 'Mengenal 5 Bahasa Tangisan Bayi' },
             ].slice(0, 4).map((c) => (
               <Pressable key={c.title} onPress={() => onNavigate('education')} style={[styles.educCard, { backgroundColor: c.color }]}>
-                <View style={styles.miniPill}><Text style={styles.miniPillText}>Education</Text></View>
+                <View style={styles.educTopRow}>
+                  <View style={styles.miniPill}><Text style={styles.miniPillText}>Education</Text></View>
+                  <View style={styles.educIconWrap}><Ionicons name={c.icon} size={16} color="rgba(255,255,255,0.9)" /></View>
+                </View>
                 <Text style={styles.educTitle} numberOfLines={2}>{c.title}</Text>
-                <Text style={styles.educRead}>Baca artikel  •  4 menit</Text>
+                <View style={styles.educReadRow}>
+                  <Ionicons name="time-outline" size={10} color="#E9F4FF" />
+                  <Text style={styles.educRead}>4 menit</Text>
+                </View>
               </Pressable>
             ))}
           </View>
@@ -176,6 +183,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     overflow: 'hidden',
   },
+  educTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   miniPill: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,255,255,0.22)',
@@ -184,6 +192,15 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   miniPillText: { color: colors.white, fontSize: 9, fontWeight: '800' },
+  educIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   educTitle: { color: colors.white, fontSize: 14, fontWeight: '900', lineHeight: 19, marginVertical: 10 },
+  educReadRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   educRead: { color: '#E9F4FF', fontSize: 9 },
 });

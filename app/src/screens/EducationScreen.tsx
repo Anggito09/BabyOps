@@ -44,8 +44,9 @@ export function EducationScreen() {
           </View>
           {articles.map((a, i) => (
             <TouchableOpacity key={a.id} style={styles.card} onPress={() => setOpen(a)} activeOpacity={0.85}>
-              <View style={[styles.thumb, { backgroundColor: thumbColors[i % thumbColors.length] + '1A' }]}>
+              <View style={[styles.thumb, { backgroundColor: thumbColors[i % thumbColors.length] }]}>
                 <Text style={styles.thumbEmoji}>{a.emoji}</Text>
+                <View style={styles.thumbGloss} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.category, { color: thumbColors[i % thumbColors.length] }]}>{a.category}</Text>
@@ -97,8 +98,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  thumbEmoji: { fontSize: 30 },
+  thumbGloss: {
+    position: 'absolute',
+    top: -12,
+    right: -12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  thumbEmoji: { fontSize: 28, color: colors.white },
   category: { fontSize: font.tiny, fontWeight: '900', letterSpacing: 0.5, textTransform: 'uppercase' },
   title: { color: colors.textDark, fontSize: font.body, fontWeight: '800', marginTop: 3, lineHeight: 20 },
   excerpt: { color: colors.textMuted, fontSize: font.tiny, lineHeight: 17, marginTop: 3 },

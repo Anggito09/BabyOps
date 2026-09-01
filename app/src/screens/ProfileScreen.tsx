@@ -1,17 +1,23 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, gradients, radius, spacing } from '../theme/tokens';
+import { colors, gradients, spacing } from '../theme/tokens';
 
-export function ProfileScreen() {
+interface Props {
+  user?: { name: string; email: string } | null;
+  onLogout: () => void;
+  onLogin: () => void;
+}
+
+export function ProfileScreen({ user, onLogout, onLogin }: Props) {
   return (
     <LinearGradient colors={[...gradients.github]} style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.center}>
           <View style={styles.avatar}><Text style={styles.avatarEmoji}>👨‍👩‍👦</Text></View>
-          <Text style={styles.name}>Anggito Karta Wijaya</Text>
-          <Text style={styles.sub}>Orang tua dari bayi usia 3 bulan</Text>
+          <Text style={styles.name}>{user?.name ?? 'Anggito Karta Wijaya'}</Text>
+          <Text style={styles.sub}>{user?.email ?? 'Orang tua dari bayi usia 3 bulan'}</Text>
           <View style={styles.card}>
             {[
               ['person', 'Data orang tua'],
@@ -25,6 +31,10 @@ export function ProfileScreen() {
                 <Ionicons name="chevron-forward" color="#9BB0BA" size={18} />
               </View>
             ))}
+            <Pressable onPress={user ? onLogout : onLogin} style={styles.logout}>
+              <Ionicons name={user ? 'log-out-outline' : 'log-in-outline'} size={18} color={user ? colors.danger : colors.primary} />
+              <Text style={[styles.logoutText, { color: user ? colors.danger : colors.primary }]}>{user ? 'Keluar' : 'Masuk / Daftar'}</Text>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
@@ -63,4 +73,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowText: { flex: 1, color: colors.ink, fontSize: 13, fontWeight: '700' },
+  logout: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  logoutText: { fontSize: 13, fontWeight: '800' },
 });
