@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  babyImage: { width: 90, height: 90 },
+  babyImage: { width: 100, height: 84 },
   timer: { color: colors.white, fontSize: 28, fontWeight: '900', letterSpacing: 1, marginBottom: 14 },
   recordBtn: {
     height: 52,

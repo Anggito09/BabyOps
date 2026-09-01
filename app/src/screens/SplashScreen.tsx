@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
   logoWrap: { alignItems: 'center', gap: spacing.md },
-  logoImage: { width: 280, height: 82, tintColor: colors.white },
+  logoImage: { width: 200, height: 62, tintColor: colors.white },
   tagline: {
     color: '#D5F3FF',
     fontSize: 12,

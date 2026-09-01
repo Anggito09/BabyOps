@@ -68,8 +68,8 @@ export const shadow = {
 } as const;
 
 export const font = {
-  title: 26,
-  heading: 20,
+  title: 28,
+  heading: 22,
   body: 15,
   small: 13,
   tiny: 11,

@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 8,
   },
-  heroImage: { width: 190, height: 190 },
+  heroImage: { width: 148, height: 148 },
   leafLeft: { position: 'absolute', left: 8, top: 38, transform: [{ rotate: '-18deg' }] },
   leafRight: { position: 'absolute', right: 12, bottom: 48, transform: [{ rotate: '22deg' }] },
   card: {
