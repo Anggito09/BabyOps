@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients } from '../theme/tokens';
@@ -16,6 +16,21 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
+  const float = React.useRef(new Animated.Value(0)).current;
+  const cardIn = React.useRef(new Animated.Value(40)).current;
+  const cardFade = React.useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, { toValue: -8, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(float, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ])
+    ).start();
+    Animated.parallel([
+      Animated.timing(cardIn, { toValue: 0, duration: 650, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(cardFade, { toValue: 1, duration: 650, useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   const handle = () => {
     if (!name.trim() || !email.includes('@') || phone.trim().length < 8 || password.length < 6) {
@@ -35,11 +50,11 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
 
-        <Image source={require('../../assets/auth-mother-signup.png')} style={styles.hero} resizeMode="contain" />
+        <Animated.Image source={require('../../assets/auth-mother-signup.png')} style={[styles.hero, { transform: [{ translateY: float }] }]} resizeMode="contain" />
 
         <Text style={styles.title}>SIGN UP</Text>
 
-        <View style={styles.card}>
+        <Animated.View style={[styles.card, { opacity: cardFade, transform: [{ translateY: cardIn }] }]}>
           <Text style={styles.label}>Nama</Text>
           <View style={styles.pill}>
             <View style={styles.pillIcon}><Ionicons name="person" size={14} color="#7A8CA8" /></View>
@@ -82,7 +97,7 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
             <Text style={styles.bottomText}>Already have an account? </Text>
             <Pressable onPress={onGoLogin}><Text style={styles.bottomLink}>Sign In</Text></Pressable>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </LinearGradient>
   );

@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, gradients, radius, spacing } from '../theme/tokens';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { colors, gradients, spacing } from '../theme/tokens';
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface Props {
   onLogin: (email: string) => void;
@@ -15,6 +19,48 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
   const [remember, setRemember] = useState(false);
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
+  // Animasi eye-catching
+  const float = React.useRef(new Animated.Value(0)).current;
+  const cardIn = React.useRef(new Animated.Value(40)).current;
+  const cardFade = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, { toValue: -8, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(float, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ])
+    ).start();
+    Animated.parallel([
+      Animated.timing(cardIn, { toValue: 0, duration: 650, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(cardFade, { toValue: 1, duration: 650, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  // Google OAuth — ganti clientId dengan milikmu di Google Cloud Console
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: '1080000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com',
+    // webClientId / iosClientId / androidClientId opsional, isi jika sudah buat di console
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success' && response.authentication?.idToken) {
+      // TODO: verifikasi idToken di backend, ambil email dari token
+      // Untuk sekarang mock sukses dengan email Google
+      onLogin('google.user@gmail.com');
+    }
+  }, [response]);
+
+  const handleGoogle = async () => {
+    try {
+      if (request) {
+        const res = await promptAsync();
+        if (res?.type === 'success') return; // ditangani useEffect
+      }
+    } catch {}
+    // Fallback mock — agar tetap bisa demo tanpa setup Google Cloud
+    onLogin('google@babyops.id');
+  };
 
   const handle = () => {
     if (!email.includes('@') || password.length < 6) {
@@ -30,11 +76,11 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
 
-        <Image source={require('../../assets/auth-mother-signin.png')} style={styles.hero} resizeMode="contain" />
+        <Animated.Image source={require('../../assets/auth-mother-signin.png')} style={[styles.hero, { transform: [{ translateY: float }] }]} resizeMode="contain" />
 
         <Text style={styles.title}>SIGN IN</Text>
 
-        <View style={styles.card}>
+        <Animated.View style={[styles.card, { opacity: cardFade, transform: [{ translateY: cardIn }] }]}>
           <Text style={styles.label}>Email</Text>
           <View style={styles.pill}>
             <View style={styles.pillIcon}><Ionicons name="mail" size={14} color="#7A8CA8" /></View>
@@ -85,16 +131,17 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
             <View style={styles.dividerLine} />
           </View>
 
-          <Pressable style={styles.googleBtn} onPress={handle}>
+          <Pressable style={[styles.googleBtn, !request && { opacity: 0.95 }]} onPress={handleGoogle} disabled={!request && false}>
             <Text style={styles.googleG}>G</Text>
             <Text style={styles.googleText}>Sign In with Google</Text>
           </Pressable>
+          <Text style={styles.googleHint}>*Tanpa setup Google Cloud, tombol akan mock login sebagai google@babyops.id</Text>
 
           <View style={styles.bottomRow}>
             <Text style={styles.bottomText}>Don&apos;t have an account? </Text>
             <Pressable onPress={onGoRegister}><Text style={styles.bottomLink}>Sign Up</Text></Pressable>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </LinearGradient>
   );
@@ -192,6 +239,7 @@ const styles = StyleSheet.create({
   },
   googleG: { color: '#EA4335', fontSize: 18, fontWeight: '900' },
   googleText: { color: '#6B7C93', fontSize: 13, fontWeight: '600' },
+  googleHint: { color: '#8AA0B8', fontSize: 10, textAlign: 'center', marginTop: -2 },
   bottomRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   bottomText: { color: '#1A2B4A', fontSize: 12 },
   bottomLink: { color: '#2FA0E5', fontSize: 12, fontWeight: '800' },
