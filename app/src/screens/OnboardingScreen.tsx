@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, font, gradients, radius, spacing } from '../theme/tokens';
+
+const slideImages = [
+  require('../../assets/onboarding-baby-cry.png'),
+  require('../../assets/onboarding-baby-bottle.png'),
+  require('../../assets/onboarding-mother.png'),
+];
 
 interface Props {
   onFinish: () => void;
@@ -41,13 +47,7 @@ export function OnboardingScreen({ onFinish }: Props) {
   return (
     <LinearGradient colors={[...gradients.github]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.root}>
       <View style={styles.topRow}>
-        <View style={styles.logoRow}>
-          <Text style={styles.logoText}>Baby</Text>
-          <View style={styles.logoBaby}>
-            <Text style={styles.logoEmoji}>👶</Text>
-          </View>
-          <Text style={styles.logoText}>ps</Text>
-        </View>
+        <Image source={require('../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
         <TouchableOpacity onPress={onFinish} hitSlop={10}>
           <Text style={styles.skipText}>Lewati</Text>
         </TouchableOpacity>
@@ -60,7 +60,7 @@ export function OnboardingScreen({ onFinish }: Props) {
         <View style={styles.heroCircleWrap}>
           <View style={styles.heroCircleBg} />
           <View style={styles.heroCircle}>
-            <Text style={styles.heroEmoji}>{slide.emoji}</Text>
+            <Image source={slideImages[index]} style={styles.heroImage} resizeMode="contain" />
           </View>
           <Ionicons name="leaf" size={18} color="rgba(255,255,255,0.55)" style={styles.leafLeft} />
           <Ionicons name="leaf" size={14} color="rgba(255,255,255,0.4)" style={styles.leafRight} />
@@ -97,18 +97,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
   },
-  logoRow: { flexDirection: 'row', alignItems: 'center' },
-  logoText: { color: colors.white, fontSize: 18, fontWeight: '900', letterSpacing: -0.8 },
-  logoBaby: {
-    width: 22,
-    height: 22,
-    borderRadius: radius.pill,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 2,
-  },
-  logoEmoji: { fontSize: 12 },
+  logoImage: { width: 110, height: 28, tintColor: colors.white },
   skipText: { color: colors.white, fontSize: font.small, fontWeight: '700' },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: spacing.lg, gap: 8 },
   bubble: {
@@ -143,7 +132,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 6,
   },
-  heroEmoji: { fontSize: 76 },
+  heroImage: { width: 130, height: 130 },
   leafLeft: { position: 'absolute', left: 6, top: 34, transform: [{ rotate: '-18deg' }] },
   leafRight: { position: 'absolute', right: 10, bottom: 42, transform: [{ rotate: '22deg' }] },
   card: {

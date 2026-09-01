@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { classifier, CryPrediction } from '../model/cryClassifier';
-import { colors, gradients, radius, spacing } from '../theme/tokens';
+import { colors, gradients, spacing } from '../theme/tokens';
 
 interface Props {
   onBack: () => void;
@@ -70,7 +70,7 @@ export function RecordScreen({ onBack, onResult }: Props) {
           <View style={styles.rings}>
             <View style={styles.ring2}>
               <View style={styles.babyCircle}>
-                <Text style={styles.babyEmoji}>👶</Text>
+                <Image source={require('../../assets/baby-record.png')} style={styles.babyImage} resizeMode="contain" />
               </View>
             </View>
           </View>
@@ -127,8 +127,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  babyEmoji: { fontSize: 64 },
+  babyImage: { width: 90, height: 90 },
   timer: { color: colors.white, fontSize: 28, fontWeight: '900', letterSpacing: 1, marginBottom: 14 },
   recordBtn: {
     height: 52,

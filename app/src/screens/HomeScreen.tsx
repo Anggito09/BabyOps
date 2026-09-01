@@ -1,9 +1,9 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { articles } from '../data/articles';
-import { colors, font, gradients, radius, shadow, spacing } from '../theme/tokens';
+import { colors, gradients, radius, shadow, spacing } from '../theme/tokens';
 import { TabKey } from '../components/BottomNav';
 
 interface Props {
@@ -18,11 +18,7 @@ export function HomeScreen({ userName, onNavigate, onRecord }: Props) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Header — sesuai babyops-home-v2.webp */}
         <View style={styles.header}>
-          <View style={styles.logoRow}>
-            <Text style={styles.logoText}>Baby</Text>
-            <View style={styles.logoBaby}><Text style={styles.logoEmoji}>👶</Text></View>
-            <Text style={styles.logoText}>ps</Text>
-          </View>
+          <Image source={require('../../assets/logo.png')} style={styles.headerLogo} resizeMode="contain" />
           <View style={styles.headerRight}>
             <View style={styles.ageBadge}>
               <Text style={styles.ageNum}>03</Text>
@@ -102,18 +98,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: 54,
   },
-  logoRow: { flexDirection: 'row', alignItems: 'center' },
-  logoText: { fontSize: 20, fontWeight: '900', color: colors.white, letterSpacing: -1 },
-  logoBaby: {
-    width: 26,
-    height: 26,
-    borderRadius: radius.pill,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 2,
-  },
-  logoEmoji: { fontSize: 14 },
+  headerLogo: { width: 130, height: 32, tintColor: colors.white },
   headerRight: { alignItems: 'center' },
   ageBadge: {
     width: 68,

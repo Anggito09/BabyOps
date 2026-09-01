@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients, radius, spacing } from '../theme/tokens';
@@ -27,11 +27,7 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
   return (
     <LinearGradient colors={[...gradients.github]} style={styles.root}>
       <View style={styles.top}>
-        <View style={styles.logoRow}>
-          <Text style={styles.logoText}>Baby</Text>
-          <View style={styles.logoBaby}><Text>👶</Text></View>
-          <Text style={styles.logoText}>ps</Text>
-        </View>
+        <Image source={require('../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
         <Text style={styles.tagline}>Masuk untuk melanjutkan</Text>
         <View style={styles.heroCircle}>
           <Ionicons name="heart" size={28} color={colors.primary} />
@@ -86,9 +82,7 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, paddingTop: 60 },
   top: { alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.lg, gap: 10 },
-  logoRow: { flexDirection: 'row', alignItems: 'center' },
-  logoText: { color: colors.white, fontSize: 22, fontWeight: '900', letterSpacing: -1 },
-  logoBaby: { width: 28, height: 28, borderRadius: radius.pill, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', marginHorizontal: 2 },
+  logoImage: { width: 140, height: 36, tintColor: colors.white },
   tagline: { color: '#D5F3FF', fontSize: 11, letterSpacing: 1, marginTop: 2 },
   heroCircle: {
     width: 64,

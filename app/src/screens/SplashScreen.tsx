@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, font, gradients, radius, spacing } from '../theme/tokens';
 
@@ -43,13 +43,7 @@ export function SplashScreen({ onFinish }: Props) {
       style={styles.root}
     >
       <Animated.View style={[styles.logoWrap, { transform: [{ scale }], opacity: fade }]}>
-        <View style={styles.logoRow}>
-          <Text style={styles.logoText}>Baby</Text>
-          <View style={styles.logoBaby}>
-            <Text style={styles.logoBabyEmoji}>👶</Text>
-          </View>
-          <Text style={styles.logoText}>ps</Text>
-        </View>
+        <Image source={require('../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
         <Text style={styles.tagline}>Your baby voice assistant</Text>
       </Animated.View>
 
@@ -71,19 +65,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xl,
   },
-  logoWrap: { alignItems: 'center' },
-  logoRow: { flexDirection: 'row', alignItems: 'center' },
-  logoText: { fontSize: 32, fontWeight: '900', color: colors.white, letterSpacing: -1.2 },
-  logoBaby: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.pill,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 2,
-  },
-  logoBabyEmoji: { fontSize: 18 },
+  logoWrap: { alignItems: 'center', gap: spacing.sm },
+  logoImage: { width: 220, height: 64, tintColor: colors.white },
   tagline: {
     color: '#D5F3FF',
     fontSize: 11,
