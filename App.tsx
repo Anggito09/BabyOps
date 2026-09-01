@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -11,9 +11,13 @@ import { EducationScreen } from './src/screens/EducationScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
+import { CompleteProfileScreen } from './src/screens/CompleteProfileScreen';
+import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
 import { BottomNav, TabKey } from './src/components/BottomNav';
 import { colors } from './src/theme/tokens';
 import { CryPrediction } from './src/model/cryClassifier';
+import * as DB from './src/storage/db';
+import { emailService } from './src/services/emailService';
 
 export interface DiagnosisHistoryEntry {
   id: string;
@@ -30,6 +34,8 @@ type Route =
   | { name: 'onboarding' }
   | { name: 'login' }
   | { name: 'register' }
+  | { name: 'forgot' }
+  | { name: 'completeProfile'; email: string; initialName: string }
   | { name: 'main'; tab: TabKey }
   | { name: 'record' }
   | { name: 'result'; prediction: CryPrediction };
@@ -49,36 +55,153 @@ export default function App() {
   const [route, setRoute] = useState<Route>({ name: 'splash' });
   const [user, setUser] = useState<{ name: string; email: string; babyDob?: string } | null>(null);
   const [history, setHistory] = useState<DiagnosisHistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loginError, setLoginError] = useState('');
+
+  // Load dari AsyncStorage — data tidak hilang walau app restart
+  useEffect(() => {
+    (async () => {
+      try {
+        const email = await DB.getCurrentEmail();
+        if (email) {
+          const dbUser = await DB.findUserByEmail(email);
+          if (dbUser) {
+            setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob });
+            const h = await DB.loadHistory(email);
+            setHistory(h);
+            setRoute({ name: 'main', tab: 'home' });
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // splash 2.4 detik, lalu cek loading
+  const [splashDone, setSplashDone] = useState(false);
+  useEffect(() => {
+    if (!loading && splashDone && route.name === 'splash') setRoute({ name: 'onboarding' });
+  }, [loading, splashDone]);
 
   const goMain = (tab: TabKey = 'home') => setRoute({ name: 'main', tab });
-  const handleLogin = (email: string) => {
-    setUser({ name: email.split('@')[0], email });
+
+  const handleLogin = async (email: string, password: string) => {
+    const dbUser = await DB.findUserByEmail(email);
+    if (!dbUser) {
+      // akun belum terdaftar — arahkan daftar dulu
+      setLoginError('Akun tidak ditemukan. Silakan Sign Up terlebih dahulu.');
+      setRoute({ name: 'login' });
+      return;
+    }
+    if (dbUser.provider === 'email' && dbUser.password && dbUser.password !== password) {
+      setLoginError('Password salah. Coba lagi atau gunakan Google.');
+      setRoute({ name: 'login' });
+      return;
+    }
+    await DB.setCurrentEmail(dbUser.email);
+    setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob });
+    const h = await DB.loadHistory(dbUser.email);
+    setHistory(h);
+    if (dbUser.provider === 'google' && !dbUser.babyDob) {
+      setRoute({ name: 'completeProfile', email: dbUser.email, initialName: dbUser.name });
+    } else {
+      goMain('home');
+    }
+  };
+
+  const handleGoogleLogin = async (googleEmail: string) => {
+    let dbUser = await DB.findUserByEmail(googleEmail);
+    if (!dbUser) {
+      dbUser = {
+        id: String(Date.now()),
+        name: googleEmail.split('@')[0],
+        email: googleEmail.toLowerCase(),
+        provider: 'google',
+        createdAt: new Date().toISOString(),
+      };
+      await DB.upsertUser(dbUser);
+      await emailService.sendWelcome(dbUser.email, dbUser.name, 'google');
+    }
+    await DB.setCurrentEmail(dbUser.email);
+    if (!dbUser.babyDob) {
+      setUser({ name: dbUser.name, email: dbUser.email });
+      setRoute({ name: 'completeProfile', email: dbUser.email, initialName: dbUser.name });
+    } else {
+      setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob });
+      const h = await DB.loadHistory(dbUser.email);
+      setHistory(h);
+      goMain('home');
+    }
+  };
+
+  const handleRegister = async (name: string, email: string, babyDob: string) => {
+    const existing = await DB.findUserByEmail(email);
+    if (existing) {
+      setLoginError('Email sudah terdaftar. Silakan Sign In.');
+      setRoute({ name: 'login' });
+      return;
+    }
+    const newUser: import('./src/storage/db').DbUser = {
+      id: String(Date.now()),
+      name,
+      email: email.toLowerCase(),
+      babyDob,
+      provider: 'email',
+      createdAt: new Date().toISOString(),
+    };
+    await DB.upsertUser(newUser);
+    await DB.setCurrentEmail(newUser.email);
+    setUser({ name, email: newUser.email, babyDob });
+    setHistory([]);
+    await emailService.sendWelcome(newUser.email, name, 'email');
     goMain('home');
   };
-  const handleRegister = (name: string, email: string, babyDob: string) => {
-    setUser({ name, email, babyDob });
+
+  const handleCompleteProfile = async (name: string, babyDob: string) => {
+    if (!user && route.name !== 'completeProfile') return;
+    const email = route.name === 'completeProfile' ? route.email : user!.email;
+    const existing = await DB.findUserByEmail(email);
+    if (existing) {
+      const updated = { ...existing, name, babyDob };
+      await DB.upsertUser(updated);
+      await DB.setCurrentEmail(updated.email);
+      setUser({ name: updated.name, email: updated.email, babyDob: updated.babyDob });
+      const h = await DB.loadHistory(updated.email);
+      setHistory(h);
+    }
     goMain('home');
   };
-  const handleLogout = () => {
+
+  const handleLogout = async () => {
+    await DB.setCurrentEmail(null);
     setUser(null);
     setHistory([]);
     setRoute({ name: 'login' });
   };
 
-  const addHistory = (entry: Omit<DiagnosisHistoryEntry, 'id' | 'date'>) => {
+  const addHistory = async (entry: Omit<DiagnosisHistoryEntry, 'id' | 'date'>) => {
     const newEntry: DiagnosisHistoryEntry = {
       ...entry,
       id: String(Date.now()),
       date: new Date().toLocaleDateString('id-ID'),
     };
-    setHistory((prev) => [newEntry, ...prev].slice(0, 10));
+    const next = [newEntry, ...history].slice(0, 10);
+    setHistory(next);
+    if (user?.email) await DB.saveHistory(user.email, next);
   };
 
   if (route.name === 'splash') {
     return (
       <SafeAreaView style={styles.safe}>
-        <SplashScreen onFinish={() => setRoute({ name: 'onboarding' })} />
+        <SplashScreen onFinish={() => setSplashDone(true)} />
         <StatusBar style="light" />
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator color={colors.white} />
+            <Text style={styles.loadingText}>Memuat data...</Text>
+          </View>
+        )}
       </SafeAreaView>
     );
   }
@@ -95,7 +218,13 @@ export default function App() {
   if (route.name === 'login') {
     return (
       <SafeAreaView style={styles.safe}>
-        <LoginScreen onLogin={handleLogin} onGoRegister={() => setRoute({ name: 'register' })} />
+        <LoginScreen
+          onLogin={handleLogin}
+          onGoogleLogin={handleGoogleLogin}
+          onGoRegister={() => { setLoginError(''); setRoute({ name: 'register' }); }}
+          onForgot={() => { setLoginError(''); setRoute({ name: 'forgot' }); }}
+          initialError={loginError}
+        />
         <StatusBar style="light" />
       </SafeAreaView>
     );
@@ -104,7 +233,25 @@ export default function App() {
   if (route.name === 'register') {
     return (
       <SafeAreaView style={styles.safe}>
-        <RegisterScreen onRegister={handleRegister} onGoLogin={() => setRoute({ name: 'login' })} />
+        <RegisterScreen onRegister={handleRegister} onGoLogin={() => { setLoginError(''); setRoute({ name: 'login' }); }} />
+        <StatusBar style="light" />
+      </SafeAreaView>
+    );
+  }
+
+  if (route.name === 'completeProfile') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <CompleteProfileScreen initialEmail={route.email} initialName={route.initialName} onComplete={handleCompleteProfile} />
+        <StatusBar style="light" />
+      </SafeAreaView>
+    );
+  }
+
+  if (route.name === 'forgot') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ForgotPasswordScreen onBack={() => { setLoginError(''); setRoute({ name: 'login' }); }} onResetSuccess={(email) => { setLoginError('Password berhasil direset. Silakan Sign In.'); setRoute({ name: 'login' }); }} />
         <StatusBar style="light" />
       </SafeAreaView>
     );
@@ -157,4 +304,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.primaryDarker,
   },
+  loadingOverlay: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  loadingText: { color: colors.white, fontSize: 12, fontWeight: '600' },
 });

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useAudioPlayer, useAudioRecorder, AudioModule, RecordingPresets, setAudioModeAsync } from 'expo-audio';
 import { classifier, CryPrediction } from '../model/cryClassifier';
 import { colors, gradients, spacing } from '../theme/tokens';
 
@@ -15,6 +16,19 @@ export function RecordScreen({ onBack, onResult }: Props) {
   const [seconds, setSeconds] = useState(0);
   const [processing, setProcessing] = useState(false);
   const pulse = useRef(new Animated.Value(1)).current;
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const player = useAudioPlayer(null);
+
+  useEffect(() => {
+    (async () => {
+      const status = await AudioModule.requestRecordingPermissionsAsync();
+      if (!status.granted) {
+        console.warn('Izin mikrofon ditolak');
+        return;
+      }
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+    })();
+  }, []);
 
   useEffect(() => {
     if (!recording) {
@@ -42,13 +56,48 @@ export function RecordScreen({ onBack, onResult }: Props) {
     if (processing) return;
     if (!recording) {
       setSeconds(0);
+      try {
+        await audioRecorder.prepareToRecordAsync();
+        audioRecorder.record();
+      } catch (e) {
+        console.warn('Gagal mulai rekam:', e);
+      }
       setRecording(true);
       return;
     }
     setRecording(false);
     setProcessing(true);
-    const prediction = await classifier.classify({ mfcc: [], durationSec: seconds });
-    setTimeout(() => onResult(prediction), 400);
+    try {
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
+      let prediction: CryPrediction | null = null;
+      if (uri) {
+        // dekode file audio via fetch + AudioContext (web) atau fallback classifier.classify
+        try {
+          const res = await fetch(uri);
+          const buf = await res.arrayBuffer();
+          // web: decode via AudioContext
+          const AudioCtx = (globalThis as any).AudioContext || (globalThis as any).webkitAudioContext;
+          if (AudioCtx) {
+            const ctx = new AudioCtx({ sampleRate: 16000 });
+            const audioBuf = await ctx.decodeAudioData(buf.slice(0));
+            const ch = audioBuf.getChannelData(0) as Float32Array;
+            prediction = await (classifier as any).classifyFeatures(ch, audioBuf.sampleRate);
+            ctx.close?.();
+          }
+        } catch (e) {
+          console.warn('Dekode audio gagal, fallback:', e);
+        }
+      }
+      if (!prediction) {
+        prediction = await classifier.classify({ mfcc: [], durationSec: seconds });
+      }
+      setTimeout(() => onResult(prediction!), 300);
+    } catch (e) {
+      console.warn('Gagal stop/analisis:', e);
+      const fallback = await classifier.classify({ mfcc: [], durationSec: seconds });
+      setTimeout(() => onResult(fallback), 300);
+    }
   };
 
   return (

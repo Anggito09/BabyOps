@@ -9,16 +9,20 @@ import { colors, gradients, spacing } from '../theme/tokens';
 WebBrowser.maybeCompleteAuthSession();
 
 interface Props {
-  onLogin: (email: string) => void;
+  onLogin: (email: string, password: string) => void;
+  onGoogleLogin: (email: string) => void;
   onGoRegister: () => void;
+  onForgot?: () => void;
+  initialError?: string;
 }
 
-export function LoginScreen({ onLogin, onGoRegister }: Props) {
+export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, initialError = '' }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [show, setShow] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
+  const [showGoogleSheet, setShowGoogleSheet] = useState(false);
   // Animasi eye-catching
   const float = React.useRef(new Animated.Value(0)).current;
   const cardIn = React.useRef(new Animated.Value(40)).current;
@@ -47,13 +51,14 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
 
   useEffect(() => {
     if (response?.type === 'success' && response.authentication?.idToken) {
-      onLogin('google.user@gmail.com');
+      onGoogleLogin('google.user@gmail.com');
     }
   }, [response]);
 
   const handleGoogle = async () => {
+    // Simulasi alur Google: tampilkan picker akun Google dulu, baru auth
     if (isPlaceholder) {
-      onLogin('google@babyops.id');
+      setShowGoogleSheet(true);
       return;
     }
     try {
@@ -62,7 +67,12 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
         if (res?.type === 'success') return;
       }
     } catch {}
-    onLogin('google@babyops.id');
+    setShowGoogleSheet(true);
+  };
+
+  const pickGoogleAccount = (googleEmail: string) => {
+    setShowGoogleSheet(false);
+    onGoogleLogin(googleEmail);
   };
 
   const handle = () => {
@@ -71,7 +81,7 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
       return;
     }
     setError('');
-    onLogin(email);
+    onLogin(email.trim().toLowerCase(), password);
   };
 
   return (
@@ -119,7 +129,7 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
               <View style={[styles.checkbox, remember && styles.checkboxOn]}>{remember && <Ionicons name="checkmark" size={12} color={colors.white} />}</View>
               <Text style={styles.rememberText}>Remember me</Text>
             </Pressable>
-            <Pressable><Text style={styles.forgot}>Forgot password?</Text></Pressable>
+            <Pressable onPress={() => (onForgot ? onForgot() : setError('Fitur reset password segera hadir.'))}><Text style={styles.forgot}>Forgot password?</Text></Pressable>
           </View>
 
           <Pressable onPress={handle} style={styles.primaryWrap}>
@@ -134,11 +144,11 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
             <View style={styles.dividerLine} />
           </View>
 
-          <Pressable style={[styles.googleBtn, !request && { opacity: 0.95 }]} onPress={handleGoogle} disabled={!request && false}>
+          <Pressable style={[styles.googleBtn, !request && { opacity: 0.95 }]} onPress={handleGoogle}>
             <Text style={styles.googleG}>G</Text>
             <Text style={styles.googleText}>Sign In with Google</Text>
           </Pressable>
-          <Text style={styles.googleHint}>*Tanpa setup Google Cloud, tombol akan mock login sebagai google@babyops.id</Text>
+          <Text style={styles.googleHint}>Pilih akun Google kamu — akan diminta lengkapi profil bayi jika baru</Text>
 
           <View style={styles.bottomRow}>
             <Text style={styles.bottomText}>Don&apos;t have an account? </Text>
@@ -146,6 +156,34 @@ export function LoginScreen({ onLogin, onGoRegister }: Props) {
           </View>
         </Animated.View>
       </ScrollView>
+
+      {showGoogleSheet && (
+        <View style={styles.sheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowGoogleSheet(false)} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Pilih akun Google</Text>
+              <Text style={styles.sheetSub}>Menghubungkan ke Google — pilih akun untuk melanjutkan</Text>
+            </View>
+            {[
+              { email: 'whafie7@gmail.com', name: 'whafie' },
+              { email: 'google@babyops.id', name: 'Google User' },
+              { email: 'demo@babyops.id', name: 'Demo BabyOps' },
+            ].map((acc) => (
+              <Pressable key={acc.email} style={styles.accountRow} onPress={() => pickGoogleAccount(acc.email)}>
+                <View style={styles.accountAvatar}><Text style={styles.accountInitial}>{acc.name[0].toUpperCase()}</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.accountName}>{acc.name}</Text>
+                  <Text style={styles.accountEmail}>{acc.email}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#8AA0B8" />
+              </Pressable>
+            ))}
+            <Pressable style={styles.sheetCancel} onPress={() => setShowGoogleSheet(false)}><Text style={styles.sheetCancelText}>Batal</Text></Pressable>
+          </View>
+        </View>
+      )}
     </LinearGradient>
   );
 }
@@ -243,6 +281,19 @@ const styles = StyleSheet.create({
   googleG: { color: '#EA4335', fontSize: 18, fontWeight: '900' },
   googleText: { color: '#6B7C93', fontSize: 13, fontWeight: '600' },
   googleHint: { color: '#8AA0B8', fontSize: 10, textAlign: 'center', marginTop: -2 },
+  sheetOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28 },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#D6E6FF', alignSelf: 'center', marginBottom: 14 },
+  sheetHeader: { marginBottom: 14 },
+  sheetTitle: { fontSize: 16, fontWeight: '900', color: colors.ink },
+  sheetSub: { fontSize: 12, color: colors.muted, marginTop: 4 },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EDF2F4' },
+  accountAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EAF0F7', alignItems: 'center', justifyContent: 'center' },
+  accountInitial: { color: colors.primary, fontWeight: '900' },
+  accountName: { color: colors.ink, fontWeight: '700', fontSize: 13 },
+  accountEmail: { color: colors.muted, fontSize: 11 },
+  sheetCancel: { marginTop: 14, height: 44, borderRadius: 12, backgroundColor: '#F0F2F5', alignItems: 'center', justifyContent: 'center' },
+  sheetCancelText: { color: colors.ink, fontWeight: '700' },
   bottomRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 4 },
   bottomText: { color: '#1A2B4A', fontSize: 12 },
   bottomLink: { color: '#2FA0E5', fontSize: 12, fontWeight: '800' },
