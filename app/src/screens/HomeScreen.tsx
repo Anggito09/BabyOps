@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { articles } from '../data/articles';
@@ -17,14 +17,6 @@ interface Props {
 
 export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate, onRecord }: Props) {
   const displayName = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : 'Anggito Karta Wijaya';
-  const cardIn = useRef(new Animated.Value(30)).current;
-  const cardFade = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(cardIn, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(cardFade, { toValue: 1, duration: 600, useNativeDriver: true }),
-    ]).start();
-  }, []);
   return (
     <LinearGradient colors={[...gradients.github]} style={styles.gradient}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -45,7 +37,7 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
         </View>
 
         {/* White content card — rounded top seperti di screenshot */}
-        <Animated.View style={[styles.contentCard, { opacity: cardFade, transform: [{ translateY: cardIn }] }]}>
+        <View style={styles.contentCard}>
           {/* Disease History — pink FDE5E4 */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Riwayat Kesehatan</Text>
@@ -53,14 +45,11 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
           </View>
           {history.length === 0 ? (
             <View style={styles.emptyHistoryCard}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="document-text-outline" size={28} color={colors.muted} />
-              </View>
+              <View style={styles.emptyIcon}><Ionicons name="document-text-outline" size={28} color={colors.muted} /></View>
               <Text style={styles.emptyTitle}>Belum ada riwayat Diagnosa</Text>
               <Text style={styles.emptyBody}>Pengguna baru belum memiliki riwayat. Coba fitur Diagnosis untuk cek gejala bayi — hasilnya akan tampil di sini.</Text>
               <Pressable style={styles.emptyCta} onPress={() => onNavigate('diagnosis')}>
-                <Text style={styles.emptyCtaText}>Mulai Cek Gejala</Text>
-                <Ionicons name="arrow-forward" size={14} color={colors.white} />
+                <Text style={styles.emptyCtaText}>Mulai Cek Gejala</Text><Ionicons name="arrow-forward" size={14} color={colors.white} />
               </Pressable>
             </View>
           ) : (
@@ -116,7 +105,7 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
               </Pressable>
             ))}
           </View>
-        </Animated.View>
+        </View>
       </ScrollView>
     </LinearGradient>
   );
@@ -132,22 +121,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: 54,
   },
-  headerLogo: { width: 160, height: 38, tintColor: colors.white },
+  headerLogo: { width: 130, height: 32, tintColor: colors.white },
   headerRight: { alignItems: 'center' },
   ageBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadow.card,
   },
   ageNum: { color: colors.primary, fontSize: 26, fontWeight: '900', lineHeight: 28 },
-  ageText: { color: colors.muted, fontSize: 10, fontWeight: '800' },
-  greetBlock: { paddingHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: 18 },
-  hello: { color: '#CBEFFF', fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
-  name: { color: colors.white, fontSize: 24, fontWeight: '900', marginTop: 4, letterSpacing: -0.4, textShadowColor: 'rgba(0,0,0,0.18)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  ageText: { color: colors.muted, fontSize: 10, fontWeight: '700' },
+  greetBlock: { paddingHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.lg },
+  hello: { color: '#CBEFFF', fontSize: 12 },
+  name: { color: colors.white, fontSize: 20, fontWeight: '900', marginTop: 4 },
   contentCard: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 28,
@@ -158,56 +147,29 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: 16, fontWeight: '900', color: colors.ink, letterSpacing: -0.3 },
-  date: { fontSize: 11, color: '#C46A80', fontWeight: '600' },
+  sectionTitle: { fontSize: 15, fontWeight: '800', color: colors.ink },
+  date: { fontSize: 11, color: '#C46A80' },
   historyCard: {
     backgroundColor: '#FFF0F3',
     borderRadius: 20,
-    padding: 18,
+    padding: 17,
     shadowColor: '#003C5B',
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#FFE4E8',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  emptyHistoryCard: {
-    backgroundColor: '#F0F7FF',
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#D6E6FF',
-    borderStyle: 'dashed',
-    gap: 8,
-  },
-  emptyIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  emptyHistoryCard: { backgroundColor: '#F0F7FF', borderRadius: 20, padding: 20, alignItems: 'center', borderWidth: 1.5, borderColor: '#D6E6FF', borderStyle: 'dashed', gap: 8 },
+  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 15, fontWeight: '900', color: colors.ink, textAlign: 'center' },
   emptyBody: { fontSize: 12, color: colors.muted, lineHeight: 18, textAlign: 'center' },
-  emptyCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 14,
-    marginTop: 4,
-  },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, marginTop: 4 },
   emptyCtaText: { color: colors.white, fontSize: 12, fontWeight: '800' },
   historyTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   historyEmoji: { fontSize: 22 },
   severityMini: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   severityMiniText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
-  historyTitle: { fontSize: 16, fontWeight: '900', color: colors.ink, marginBottom: 4, letterSpacing: -0.3 },
-  historyBody: { fontSize: 12, color: colors.muted, lineHeight: 18, fontWeight: '500' },
+  historyTitle: { fontSize: 17, fontWeight: '900', color: colors.ink, marginBottom: 5 },
+  historyBody: { fontSize: 12, color: colors.muted, lineHeight: 18 },
   more: { alignSelf: 'flex-end', fontSize: 11, color: colors.githubDark, fontWeight: '800', marginTop: 8 },
   quickRow: { flexDirection: 'row', gap: 12 },
   quickCard: {
