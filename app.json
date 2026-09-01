@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "BabyOps",
+    "slug": "babyops",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "babyops",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "android": {
+      "package": "com.anggito09.babyops"
+    },
+    "ios": {
+      "bundleIdentifier": "com.anggito09.babyops"
+    }
+  }
+}
