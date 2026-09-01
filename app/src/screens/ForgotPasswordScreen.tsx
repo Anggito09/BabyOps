@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients } from '../theme/tokens';
@@ -20,15 +20,6 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
   const [confirm, setConfirm] = useState('');
   const [info, setInfo] = useState('');
   const [error, setError] = useState('');
-  const cardIn = React.useRef(new Animated.Value(30)).current;
-  const cardFade = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    Animated.parallel([
-      Animated.timing(cardIn, { toValue: 0, duration: 550, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(cardFade, { toValue: 1, duration: 550, useNativeDriver: true }),
-    ]).start();
-  }, [step]);
 
   const requestCode = async () => {
     const user = await DB.findUserByEmail(email.trim());
@@ -70,7 +61,7 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>RESET PASSWORD</Text>
-        <Animated.View style={[styles.card, { opacity: cardFade, transform: [{ translateY: cardIn }] }]}>
+        <View style={styles.card}>
           <View style={styles.stepRow}>
             {[1, 2, 3].map((s) => (
               <View key={s} style={[styles.stepDot, step >= s && styles.stepDotOn]} />
@@ -127,7 +118,7 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
           </Pressable>
 
           <Pressable onPress={onBack} style={styles.backBtn}><Text style={styles.backText}>← Kembali ke Sign In</Text></Pressable>
-        </Animated.View>
+        </View>
       </ScrollView>
     </LinearGradient>
   );

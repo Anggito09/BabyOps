@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { CalendarPicker } from '../components/CalendarPicker';
@@ -23,15 +23,6 @@ export function CompleteProfileScreen({ initialEmail, initialName, onComplete }:
   const [babyDate, setBabyDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [error, setError] = useState('');
-  const float = React.useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(float, { toValue: -8, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(float, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
 
   const handle = () => {
     if (!name.trim()) { setError('Nama harus diisi.'); return; }
@@ -45,7 +36,7 @@ export function CompleteProfileScreen({ initialEmail, initialName, onComplete }:
     <LinearGradient colors={[...gradients.github]} style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-        <Animated.Image source={require('../../assets/auth-mother-signup.png')} style={[styles.hero, { transform: [{ translateY: float }] }]} resizeMode="contain" />
+        <Image source={require('../../assets/auth-mother-signup.png')} style={styles.hero} resizeMode="contain" />
         <Text style={styles.title}>LENGKAPI PROFIL</Text>
         <Text style={styles.subtitle}>Akun Google terhubung sebagai {initialEmail}. Lengkapi data agar umur bayi (03 Bulan) akurat.</Text>
         <View style={styles.card}>

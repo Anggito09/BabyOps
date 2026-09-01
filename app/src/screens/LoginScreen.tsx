@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
@@ -23,23 +23,6 @@ export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, in
   const [show, setShow] = useState(false);
   const [error, setError] = useState(initialError);
   const [showGoogleSheet, setShowGoogleSheet] = useState(false);
-  // Animasi eye-catching
-  const float = React.useRef(new Animated.Value(0)).current;
-  const cardIn = React.useRef(new Animated.Value(40)).current;
-  const cardFade = React.useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(float, { toValue: -8, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(float, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ])
-    ).start();
-    Animated.parallel([
-      Animated.timing(cardIn, { toValue: 0, duration: 650, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(cardFade, { toValue: 1, duration: 650, useNativeDriver: true }),
-    ]).start();
-  }, []);
 
   // Google OAuth — ganti clientId dengan milikmu di Google Cloud Console
   // Jika masih placeholder, tombol akan langsung mock tanpa panggil Google (hindari Error 401 invalid_client)
@@ -89,11 +72,11 @@ export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, in
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
 
-        <Animated.Image source={require('../../assets/auth-mother-signin.png')} style={[styles.hero, { transform: [{ translateY: float }] }]} resizeMode="contain" />
+        <Image source={require('../../assets/auth-mother-signin.png')} style={styles.hero} resizeMode="contain" />
 
         <Text style={styles.title}>SIGN IN</Text>
 
-        <Animated.View style={[styles.card, { opacity: cardFade, transform: [{ translateY: cardIn }] }]}>
+        <View style={styles.card}>
           <Text style={styles.label}>Email</Text>
           <View style={styles.pill}>
             <View style={styles.pillIcon}><Ionicons name="mail" size={14} color="#7A8CA8" /></View>
@@ -154,7 +137,7 @@ export function LoginScreen({ onLogin, onGoogleLogin, onGoRegister, onForgot, in
             <Text style={styles.bottomText}>Don&apos;t have an account? </Text>
             <Pressable onPress={onGoRegister}><Text style={styles.bottomLink}>Sign Up</Text></Pressable>
           </View>
-        </Animated.View>
+        </View>
       </ScrollView>
 
       {showGoogleSheet && (

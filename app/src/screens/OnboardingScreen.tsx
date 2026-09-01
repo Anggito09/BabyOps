@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, font, gradients, radius, spacing } from '../theme/tokens';
@@ -38,37 +38,6 @@ const slides = [
 export function OnboardingScreen({ onFinish }: Props) {
   const [index, setIndex] = useState(0);
   const slide = slides[index];
-  const fade = useRef(new Animated.Value(1)).current;
-  const slideX = useRef(new Animated.Value(0)).current;
-  const bubbleScale = useRef(new Animated.Value(1)).current;
-  const float = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(float, { toValue: -10, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(float, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ])
-    ).start();
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.08, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-
-  useEffect(() => {
-    fade.setValue(0);
-    slideX.setValue(22);
-    bubbleScale.setValue(0.8);
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 380, useNativeDriver: true }),
-      Animated.timing(slideX, { toValue: 0, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.spring(bubbleScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
-    ]).start();
-  }, [index]);
 
   const next = () => {
     if (index < slides.length - 1) setIndex(index + 1);
@@ -84,19 +53,19 @@ export function OnboardingScreen({ onFinish }: Props) {
         </TouchableOpacity>
       </View>
 
-      <Animated.View style={[styles.hero, { opacity: fade, transform: [{ translateX: slideX }] }]}>
-        <Animated.View style={[styles.bubble, { transform: [{ scale: bubbleScale }] }]}>
+      <View style={styles.hero}>
+        <View style={styles.bubble}>
           <Text style={styles.bubbleText}>{slide.bubble}</Text>
-        </Animated.View>
-        <Animated.View style={[styles.heroCircleWrap, { transform: [{ translateY: float }] }]}>
-          <Animated.View style={[styles.heroCircleBg, { transform: [{ scale: pulse }] }]} />
+        </View>
+        <View style={styles.heroCircleWrap}>
+          <View style={styles.heroCircleBg} />
           <View style={styles.heroCircle}>
             <Image source={slideImages[index]} style={styles.heroImage} resizeMode="contain" />
           </View>
-          <Ionicons name="leaf" size={20} color="rgba(255,255,255,0.6)" style={styles.leafLeft} />
-          <Ionicons name="leaf" size={16} color="rgba(255,255,255,0.45)" style={styles.leafRight} />
-        </Animated.View>
-      </Animated.View>
+          <Ionicons name="leaf" size={18} color="rgba(255,255,255,0.55)" style={styles.leafLeft} />
+          <Ionicons name="leaf" size={14} color="rgba(255,255,255,0.4)" style={styles.leafRight} />
+        </View>
+      </View>
 
       <View style={styles.card}>
         <View style={styles.dotsRow}>
