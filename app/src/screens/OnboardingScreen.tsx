@@ -1,0 +1,142 @@
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, font, gradients, radius, spacing } from '../theme/tokens';
+
+interface Props {
+  onFinish: () => void;
+}
+
+const slides = [
+  {
+    emoji: '👶',
+    bubble: 'Ouh Neh!',
+    title: 'Kenali Keinginan Bayi',
+    desc: 'BabyOps membantu orang tua memahami arti tangisan bayi dengan pengalaman yang sederhana dan menenangkan.',
+  },
+  {
+    emoji: '🍼',
+    bubble: 'Neh Ouh?',
+    title: 'Buat Si Kecil Bahagia',
+    desc: 'Rekam suara bayi, dapatkan kemungkinan kebutuhan, lalu lihat langkah yang bisa dilakukan.',
+  },
+  {
+    emoji: '🤱',
+    bubble: 'For Mom',
+    title: 'Edukasi untuk Ibu',
+    desc: 'Temukan artikel singkat dan praktis mengenai kesehatan, menyusui, dan perkembangan bayi.',
+  },
+];
+
+export function OnboardingScreen({ onFinish }: Props) {
+  const [index, setIndex] = useState(0);
+  const slide = slides[index];
+
+  const next = () => {
+    if (index < slides.length - 1) setIndex(index + 1);
+    else onFinish();
+  };
+
+  return (
+    <LinearGradient colors={[...gradients.github]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.root}>
+      <View style={styles.topRow}>
+        <View style={styles.logoRow}>
+          <Text style={styles.logoText}>Baby</Text>
+          <View style={styles.logoBaby}>
+            <Text style={styles.logoEmoji}>👶</Text>
+          </View>
+          <Text style={styles.logoText}>ps</Text>
+        </View>
+        <TouchableOpacity onPress={onFinish} hitSlop={10}>
+          <Text style={styles.skipText}>Lewati</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.hero}>
+        <View style={styles.bubble}>
+          <Text style={styles.bubbleText}>{slide.bubble}</Text>
+        </View>
+        <Text style={styles.heroEmoji}>{slide.emoji}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <View style={styles.dotsRow}>
+          {slides.map((_, i) => (
+            <View key={i} style={[styles.dot, i === index && styles.dotActive]} />
+          ))}
+        </View>
+        <Text style={styles.title}>{slide.title}</Text>
+        <Text style={styles.desc}>{slide.desc}</Text>
+        <TouchableOpacity
+          onPress={next}
+          activeOpacity={0.85}
+          style={styles.cta}
+        >
+          <LinearGradient colors={[colors.primary, colors.primaryDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.ctaGradient}>
+            <Text style={styles.ctaText}>{index === slides.length - 1 ? 'Mulai sekarang' : 'Selanjutnya'}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </LinearGradient>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, paddingTop: 54 },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+  },
+  logoRow: { flexDirection: 'row', alignItems: 'center' },
+  logoText: { color: colors.white, fontSize: 18, fontWeight: '900', letterSpacing: -0.8 },
+  logoBaby: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.pill,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 2,
+  },
+  logoEmoji: { fontSize: 12 },
+  skipText: { color: colors.white, fontSize: font.small, fontWeight: '700' },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: spacing.lg },
+  bubble: {
+    backgroundColor: colors.white,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    borderRadius: 25,
+    marginBottom: 12,
+  },
+  bubbleText: { fontSize: 22, fontWeight: '900', color: colors.ink },
+  heroEmoji: { fontSize: 112 },
+  card: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 34,
+    borderTopRightRadius: 34,
+    padding: spacing.xl,
+    paddingBottom: 36,
+  },
+  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 7, marginBottom: spacing.md },
+  dot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: '#CFE0E7' },
+  dotActive: { width: 22, backgroundColor: colors.primary },
+  title: { fontSize: 25, fontWeight: '900', color: colors.ink, textAlign: 'center' },
+  desc: {
+    color: colors.muted,
+    textAlign: 'center',
+    lineHeight: 21,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+    fontSize: font.body,
+  },
+  cta: { borderRadius: radius.md, overflow: 'hidden' },
+  ctaGradient: {
+    height: 52,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaText: { color: colors.white, fontWeight: '800', fontSize: font.body },
+});
