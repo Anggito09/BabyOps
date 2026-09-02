@@ -35,7 +35,7 @@ jobs:
         run: npm ci
 
       - name: Check TypeScript
-        run: npx tsc --noEmit
+        run: npx tsc --noEmit --ignoreDeprecations 6.0
 
       - name: Check Expo configuration
         run: npx expo config --type public
