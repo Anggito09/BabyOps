@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,8 @@ export function LoginScreen({ onLogin, onGoRegister, onForgot, initialError = ''
   const [remember, setRemember] = useState(false);
   const [show, setShow] = useState(false);
   const [error, setError] = useState(initialError);
+
+  useEffect(() => { setError(initialError); }, [initialError]);
 
   const handle = () => {
     if (!email.includes('@') || password.length < 6) {

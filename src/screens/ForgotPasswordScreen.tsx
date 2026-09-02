@@ -24,7 +24,9 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
   const [error, setError] = useState('');
 
   const requestCode = async () => {
-    const user = await DB.findUserByEmail(email.trim());
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed.includes('@')) { setError('Email tidak valid.'); return; }
+    const user = await DB.findUserByEmail(trimmed);
     if (!user) {
       setError('Email tidak terdaftar di BabyOps.');
       return;
@@ -33,6 +35,8 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
     setExpectedCode(generated);
     await emailService.sendResetCode(user.email, user.name, generated);
     setInfo(`Kode reset dikirim ke ${user.email}. (Mode demo: kode tercatat di outbox console)`);
+    // debug: tampilkan kode di info agar tester bisa lanjut tanpa cek email
+    setInfo(`Kode reset dikirim ke ${user.email}. (Mode demo: ${generated})`);
     setError('');
     setStep(2);
   };
@@ -49,13 +53,14 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
   const resetPassword = async () => {
     if (newPass.length < 6) { setError('Password minimal 6 karakter.'); return; }
     if (newPass !== confirm) { setError('Konfirmasi password tidak cocok.'); return; }
-    const user = await DB.findUserByEmail(email.trim());
+    const trimmed = email.trim().toLowerCase();
+    const user = await DB.findUserByEmail(trimmed);
     if (user) {
       await DB.upsertUser({ ...user, password: newPass });
       await emailService.sendPasswordChanged(user.email, user.name);
     }
     setError('');
-    onResetSuccess(email.trim().toLowerCase());
+    onResetSuccess(trimmed);
   };
 
   return (

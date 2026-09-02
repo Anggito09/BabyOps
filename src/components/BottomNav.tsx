@@ -63,6 +63,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 10,
   },
   bar: {
     height: 72,
@@ -94,6 +95,7 @@ const styles = StyleSheet.create({
     borderColor: '#D7F3FF',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 11,
     ...shadow.fab,
   },
   fabGradient: {

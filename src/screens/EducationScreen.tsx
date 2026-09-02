@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GradientHeader } from '../components/GradientHeader';
 import { articles, Article } from '../data/articles';
@@ -45,6 +45,8 @@ function AnimatedCard({ article, index, color, onPress }: { article: Article; in
 
 export function EducationScreen() {
   const [open, setOpen] = useState<Article | null>(null);
+  const [filter, setFilter] = useState('Semua');
+  const [query, setQuery] = useState('');
   const detailFade = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (open) {
@@ -52,6 +54,13 @@ export function EducationScreen() {
       Animated.timing(detailFade, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     }
   }, [open]);
+
+  const filtered = articles.filter((a) => {
+    const matchFilter = filter === 'Semua' || a.category.toLowerCase().includes(filter.toLowerCase().replace('asi & mpasi','asi')) || (filter === 'ASI & MPASI' && a.category.toLowerCase().includes('asi')) || (filter === 'Tumbuh Kembang' && a.category.toLowerCase().includes('tumbuh'));
+    const q = query.trim().toLowerCase();
+    const matchQuery = !q || a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q) || a.category.toLowerCase().includes(q);
+    return matchFilter && matchQuery;
+  });
 
   if (open) {
     return (
@@ -103,19 +112,41 @@ export function EducationScreen() {
             <View style={styles.searchIconWrap}>
               <Ionicons name="search" size={18} color={colors.white} />
             </View>
-            <Text style={styles.searchText}>Cari artikel kesehatan bayi</Text>
-            <Ionicons name="options-outline" size={18} color={colors.muted} />
+            <TextInput
+              placeholder="Cari artikel kesehatan bayi"
+              placeholderTextColor={colors.muted}
+              value={query}
+              onChangeText={setQuery}
+              style={styles.searchInput}
+            />
+            {query ? (
+              <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color={colors.muted} />
+              </Pressable>
+            ) : (
+              <Ionicons name="options-outline" size={18} color={colors.muted} />
+            )}
           </View>
           <View style={styles.filterRow}>
-            {['Semua', 'ASI & MPASI', 'Imunisasi', 'Tumbuh Kembang'].map((f, idx) => (
-              <View key={f} style={[styles.filterPill, idx === 0 && styles.filterPillActive]}>
-                <Text style={[styles.filterText, idx === 0 && styles.filterTextActive]}>{f}</Text>
-              </View>
+            {['Semua', 'ASI & MPASI', 'Imunisasi', 'Tumbuh Kembang'].map((f) => (
+              <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterPill, filter === f && styles.filterPillActive]}>
+                <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
+              </Pressable>
             ))}
           </View>
-          {articles.map((a, i) => (
-            <AnimatedCard key={a.id} article={a} index={i} color={thumbColors[i % thumbColors.length]} onPress={() => setOpen(a)} />
-          ))}
+          {filtered.length === 0 ? (
+            <View style={styles.emptySearch}>
+              <Ionicons name="search-outline" size={28} color={colors.muted} />
+              <Text style={styles.emptyText}>Tidak ada artikel untuk "{query}" di "{filter}"</Text>
+              <Pressable onPress={() => { setQuery(''); setFilter('Semua'); }} style={styles.emptyBtn}>
+                <Text style={styles.emptyBtnText}>Reset filter</Text>
+              </Pressable>
+            </View>
+          ) : (
+            filtered.map((a, i) => (
+              <AnimatedCard key={a.id} article={a} index={i} color={thumbColors[i % thumbColors.length]} onPress={() => setOpen(a)} />
+            ))
+          )}
         </View>
       </ScrollView>
     </View>
@@ -148,6 +179,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchText: { flex: 1, color: colors.muted, fontSize: 12, fontWeight: '500' },
+  searchInput: { flex: 1, color: colors.ink, fontSize: 12, fontWeight: '500' } as any,
+  emptySearch: { alignItems: 'center', gap: 10, paddingVertical: 32, backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: '#E6EDF3', marginBottom: spacing.md },
+  emptyText: { color: colors.muted, fontSize: 12, textAlign: 'center', paddingHorizontal: 16 },
+  emptyBtn: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
+  emptyBtnText: { color: colors.white, fontSize: 12, fontWeight: '800' },
   filterRow: { flexDirection: 'row', gap: 8, marginBottom: spacing.md, marginTop: 4 },
   filterPill: {
     paddingHorizontal: 14,
