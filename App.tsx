@@ -51,7 +51,7 @@ function getAgeMonths(dobStr?: string): string {
 
 export default function App() {
   const [route, setRoute] = useState<Route>({ name: 'splash' });
-  const [user, setUser] = useState<{ name: string; email: string; babyDob?: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; babyDob?: string; babyName?: string; babyGender?: string; phone?: string; address?: string } | null>(null);
   const [history, setHistory] = useState<DiagnosisHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState('');
@@ -64,7 +64,7 @@ export default function App() {
         if (email) {
           const dbUser = await DB.findUserByEmail(email);
           if (dbUser) {
-            setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob });
+            setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob, babyName: dbUser.babyName, babyGender: dbUser.babyGender, phone: dbUser.phone, address: dbUser.address });
             const h = await DB.loadHistory(email);
             setHistory(h);
             setRoute({ name: 'main', tab: 'home' });
@@ -102,10 +102,19 @@ export default function App() {
       return;
     }
     await DB.setCurrentEmail(dbUser.email);
-    setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob });
+    setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob, babyName: dbUser.babyName, babyGender: dbUser.babyGender, phone: dbUser.phone, address: dbUser.address });
     const h = await DB.loadHistory(dbUser.email);
     setHistory(h);
     goMain('home');
+  };
+
+  const handleSaveProfile = async (data: Partial<{ name: string; babyName: string; babyDob: string; babyGender: string; phone: string; address: string }>) => {
+    if (!user?.email) return;
+    const dbUser = await DB.findUserByEmail(user.email);
+    if (!dbUser) return;
+    const updated = { ...dbUser, ...data };
+    await DB.upsertUser(updated as any);
+    setUser({ name: updated.name, email: updated.email, babyDob: updated.babyDob, babyName: (updated as any).babyName, babyGender: (updated as any).babyGender, phone: (updated as any).phone, address: (updated as any).address });
   };
 
   const handleRegister = async (name: string, email: string, babyDob: string, password: string) => {
@@ -239,7 +248,7 @@ export default function App() {
       {route.tab === 'home' && <HomeScreen userName={user?.name} babyAge={babyAge} history={history} onNavigate={(tab) => goMain(tab)} onRecord={() => setRoute({ name: 'record' })} />}
       {route.tab === 'diagnosis' && <DiagnosisScreen onSaveHistory={addHistory} />}
       {route.tab === 'education' && <EducationScreen />}
-      {route.tab === 'profile' && <ProfileScreen user={user} babyAge={babyAge} historyCount={history.length} onLogout={handleLogout} onLogin={() => setRoute({ name: 'login' })} />}
+      {route.tab === 'profile' && <ProfileScreen user={user} babyAge={babyAge} historyCount={history.length} onLogout={handleLogout} onLogin={() => setRoute({ name: 'login' })} onSave={handleSaveProfile} />}
       <BottomNav
         active={route.tab}
         onChange={(tab) => goMain(tab)}

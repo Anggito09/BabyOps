@@ -6,6 +6,10 @@ export interface DbUser {
   email: string;
   password?: string; // plain mock, jangan pakai di produksi
   babyDob?: string; // YYYY-MM-DD
+  babyName?: string;
+  babyGender?: 'L' | 'P';
+  phone?: string;
+  address?: string;
   provider: 'email' | 'google';
   createdAt: string;
 }
