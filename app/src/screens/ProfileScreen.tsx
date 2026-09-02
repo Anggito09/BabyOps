@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients, spacing } from '../theme/tokens';
@@ -27,16 +27,16 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
           </View>
           <View style={styles.card}>
             {[
-              ['person', 'Data orang tua'],
-              ['happy', 'Profil bayi'],
-              ['notifications', 'Pengingat'],
-              ['shield-checkmark', 'Privasi & keamanan'],
-            ].map(([icon, label]) => (
-              <View key={label} style={styles.row}>
+              ['person', 'Data orang tua', 'Segera hadir'],
+              ['happy', 'Profil bayi', 'Segera hadir'],
+              ['notifications', 'Pengingat', 'Segera hadir'],
+              ['shield-checkmark', 'Privasi & keamanan', 'Segera hadir'],
+            ].map(([icon, label, hint]) => (
+              <Pressable key={label} style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]} onPress={() => Alert.alert(label, hint)}>
                 <Ionicons name={icon as any} color={colors.primary} size={20} />
                 <Text style={styles.rowText}>{label}</Text>
                 <Ionicons name="chevron-forward" color="#9BB0BA" size={18} />
-              </View>
+              </Pressable>
             ))}
             <Pressable onPress={user ? onLogout : onLogin} style={styles.logout}>
               <Ionicons name={user ? 'log-out-outline' : 'log-in-outline'} size={18} color={user ? colors.danger : colors.primary} />
