@@ -11,11 +11,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  */
 
 const CONFIG = {
-  serviceId: 'service_xxxxxxx', // ganti dengan EmailJS Service ID
-  welcomeTemplateId: 'template_welcome', // template: {{to_email}}, {{to_name}}, {{app_name}}
-  resetTemplateId: 'template_reset', // template: {{to_email}}, {{to_name}}, {{reset_code}}
-  changedTemplateId: 'template_changed', // template: {{to_email}}, {{to_name}}
-  publicKey: 'PUBLIC_KEY_xxxxxxxx', // EmailJS Public Key
+  serviceId: 'service_dsvufq9',
+  welcomeTemplateId: 'template_59dazod',
+  resetTemplateId: 'template_4jbxtab',
+  changedTemplateId: 'template_4jbxtab',
+  publicKey: '4hVhSvTYRDSSasM3Z',
 };
 
 const isConfigured = () =>
