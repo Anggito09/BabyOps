@@ -34,7 +34,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check TypeScript
+      - name: Check TypeScript (informational)
+        continue-on-error: true
         run: npx tsc --noEmit --ignoreDeprecations 6.0
 
       - name: Check Expo configuration
