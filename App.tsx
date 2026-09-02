@@ -267,6 +267,8 @@ export default function App() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
+    height: '100%' as any,
+    width: '100%' as any,
     backgroundColor: colors.primaryDarker,
   },
   // Web: tampil mobile di tengah (390x844) biar di HP & website sama
@@ -293,6 +295,8 @@ const styles = StyleSheet.create({
     elevation: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+    display: 'flex' as any,
+    flexDirection: 'column' as any,
   } as any,
   loadingOverlay: {
     position: 'absolute',
