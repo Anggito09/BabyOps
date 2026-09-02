@@ -6,7 +6,7 @@ import { CalendarPicker } from '../components/CalendarPicker';
 import { colors, gradients } from '../theme/tokens';
 
 interface Props {
-  onRegister: (name: string, email: string, babyDob: string) => void;
+  onRegister: (name: string, email: string, babyDob: string, password: string) => void;
   onGoLogin: () => void;
 }
 
@@ -43,7 +43,7 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
       return;
     }
     setError('');
-    onRegister(name.trim(), email, formatDate(babyDate));
+    onRegister(name.trim(), email, formatDate(babyDate), password);
   };
 
   return (

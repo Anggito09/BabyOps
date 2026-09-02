@@ -91,7 +91,12 @@ export default function App() {
       setRoute({ name: 'login' });
       return;
     }
-    if (dbUser.password && dbUser.password !== password) {
+    // migrasi: akun lama yang belum punya password -> simpan password pertama sebagai password
+    if (!dbUser.password) {
+      await DB.upsertUser({ ...dbUser, password });
+      dbUser.password = password;
+    }
+    if (dbUser.password !== password) {
       setLoginError('Password salah. Coba lagi.');
       setRoute({ name: 'login' });
       return;
@@ -103,7 +108,7 @@ export default function App() {
     goMain('home');
   };
 
-  const handleRegister = async (name: string, email: string, babyDob: string) => {
+  const handleRegister = async (name: string, email: string, babyDob: string, password: string) => {
     const existing = await DB.findUserByEmail(email);
     if (existing) {
       setLoginError('Email sudah terdaftar. Silakan Sign In.');
@@ -115,6 +120,7 @@ export default function App() {
       name,
       email: email.toLowerCase(),
       babyDob,
+      password,
       provider: 'email',
       createdAt: new Date().toISOString(),
     };
