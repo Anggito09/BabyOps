@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  input: { flex: 1, color: colors.ink, fontSize: 13, borderWidth: 0, outlineWidth: 0 } as any,
+  input: { flex: 1, color: colors.ink, fontSize: 13, borderWidth: 0, outlineWidth: 0, outlineStyle: 'none', boxShadow: 'none' } as any,
   error: { color: colors.danger, fontSize: 12 },
   primaryWrap: { borderRadius: 24, overflow: 'hidden', marginTop: 8, shadowColor: '#0A5A8C', shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 },
   primary: { height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
