@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -161,8 +161,13 @@ export default function App() {
     if (user?.email) await DB.saveHistory(user.email, next);
   };
 
+  const wrapWeb = (content: React.ReactNode) => {
+    if (Platform.OS !== 'web') return content;
+    return <View style={styles.webOuter}><View style={styles.webPhone}>{content}</View></View>;
+  };
+
   if (route.name === 'splash') {
-    return (
+    return wrapWeb(
       <SafeAreaView style={styles.safe}>
         <SplashScreen onFinish={() => setSplashDone(true)} />
         <StatusBar style="light" />
@@ -177,7 +182,7 @@ export default function App() {
   }
 
   if (route.name === 'onboarding') {
-    return (
+    return wrapWeb(
       <SafeAreaView style={styles.safe}>
         <OnboardingScreen onFinish={() => setRoute({ name: 'login' })} />
         <StatusBar style="light" />
@@ -186,7 +191,7 @@ export default function App() {
   }
 
   if (route.name === 'login') {
-    return (
+    return wrapWeb(
       <SafeAreaView style={styles.safe}>
         <LoginScreen
           onLogin={handleLogin}
@@ -200,7 +205,7 @@ export default function App() {
   }
 
   if (route.name === 'register') {
-    return (
+    return wrapWeb(
       <SafeAreaView style={styles.safe}>
         <RegisterScreen onRegister={handleRegister} onGoLogin={() => { setLoginError(''); setRoute({ name: 'login' }); }} />
         <StatusBar style="light" />
@@ -209,7 +214,7 @@ export default function App() {
   }
 
   if (route.name === 'forgot') {
-    return (
+    return wrapWeb(
       <SafeAreaView style={styles.safe}>
         <ForgotPasswordScreen onBack={() => { setLoginError(''); setRoute({ name: 'login' }); }} onResetSuccess={(email) => { setLoginError('Password berhasil direset. Silakan Sign In.'); setRoute({ name: 'login' }); }} />
         <StatusBar style="light" />
@@ -218,7 +223,7 @@ export default function App() {
   }
 
   if (route.name === 'record') {
-    return (
+    return wrapWeb(
       <SafeAreaView style={styles.safe}>
         <RecordScreen
           onBack={() => goMain('home')}
@@ -230,7 +235,7 @@ export default function App() {
   }
 
   if (route.name === 'result') {
-    return (
+    return wrapWeb(
       <SafeAreaView style={styles.safe}>
         <ResultScreen
           prediction={route.prediction}
@@ -243,7 +248,7 @@ export default function App() {
   }
 
   const babyAge = getAgeMonths(user?.babyDob);
-  return (
+  return wrapWeb(
     <SafeAreaView style={styles.safe}>
       {route.tab === 'home' && <HomeScreen userName={user?.name} babyAge={babyAge} history={history} onNavigate={(tab) => goMain(tab)} onRecord={() => setRoute({ name: 'record' })} />}
       {route.tab === 'diagnosis' && <DiagnosisScreen onSaveHistory={addHistory} />}
@@ -264,6 +269,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.primaryDarker,
   },
+  // Web: tampil mobile di tengah (390x844) biar di HP & website sama
+  webOuter: {
+    flex: 1,
+    backgroundColor: '#0A2A42',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    minHeight: '100vh' as any,
+  } as any,
+  webPhone: {
+    width: 390,
+    maxWidth: '100%',
+    height: 844,
+    maxHeight: '90vh' as any,
+    backgroundColor: colors.primaryDarker,
+    borderRadius: 32,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  } as any,
   loadingOverlay: {
     position: 'absolute',
     bottom: 80,
