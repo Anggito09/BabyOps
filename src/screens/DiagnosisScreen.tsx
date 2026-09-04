@@ -180,7 +180,7 @@ export function DiagnosisScreen({ onSaveHistory }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.skySoft },
-  scroll: { paddingBottom: 40 },
+  scroll: { paddingBottom: 140 },
   body: { paddingHorizontal: spacing.lg, marginTop: -spacing.xl },
   resetPill: {
     paddingHorizontal: 12,
