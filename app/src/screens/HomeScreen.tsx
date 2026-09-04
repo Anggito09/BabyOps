@@ -1,8 +1,9 @@
-import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { articles } from '../data/articles';
+import { conditions } from '../data/symptoms';
 import { colors, gradients, radius, shadow, spacing } from '../theme/tokens';
 import { TabKey } from '../components/BottomNav';
 import { DiagnosisHistoryEntry } from '../../App';
@@ -17,6 +18,19 @@ interface Props {
 
 export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate, onRecord }: Props) {
   const displayName = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : 'Anggito Karta Wijaya';
+  const [selectedHistory, setSelectedHistory] = useState<DiagnosisHistoryEntry | null>(null);
+
+  const getDetail = (h: DiagnosisHistoryEntry) => {
+    const known = (Object.values(conditions) as Array<{ name: string; guidance: string[]; doctorWhen: string }>).find(
+      (c) => c.name === h.conditionName
+    );
+    return {
+      symptomNames: h.symptomNames ?? [],
+      guidance: h.guidance ?? known?.guidance ?? [],
+      doctorWhen: h.doctorWhen ?? known?.doctorWhen ?? '',
+    };
+  };
+
   return (
     <LinearGradient colors={[...gradients.github]} style={styles.gradient}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -54,7 +68,7 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
             </View>
           ) : (
             history.slice(0, 2).map((h) => (
-              <Pressable key={h.id} style={styles.historyCard} onPress={() => onNavigate('diagnosis')}>
+              <Pressable key={h.id} style={styles.historyCard} onPress={() => setSelectedHistory(h)}>
                 <View style={styles.historyTopRow}>
                   <Text style={styles.historyEmoji}>{h.emoji}</Text>
                   <View style={[styles.severityMini, { backgroundColor: h.severity === 'perlu perhatian' ? '#FFD9D5' : h.severity === 'sedang' ? '#FFF0D1' : '#E0F5E4' }]}>
@@ -107,6 +121,73 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
           </View>
         </View>
       </ScrollView>
+
+      <Modal visible={!!selectedHistory} animationType="slide" transparent onRequestClose={() => setSelectedHistory(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            {selectedHistory && (() => {
+              const detail = getDetail(selectedHistory);
+              return (
+                <>
+                  <View style={styles.modalHead}>
+                    <Text style={styles.modalEmoji}>{selectedHistory.emoji}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.modalTitle}>{selectedHistory.conditionName}</Text>
+                      <Text style={styles.modalDate}>{selectedHistory.date} • {selectedHistory.matchedSymptoms} gejala</Text>
+                    </View>
+                    <Pressable onPress={() => setSelectedHistory(null)} hitSlop={10} style={styles.modalClose}>
+                      <Ionicons name="close" size={20} color={colors.muted} />
+                    </Pressable>
+                  </View>
+
+                  <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
+                    <Text style={styles.modalDesc}>{selectedHistory.description}</Text>
+
+                    <Text style={styles.detailSection}>Gejala yang dicentang</Text>
+                    {detail.symptomNames.length > 0 ? (
+                      detail.symptomNames.map((s, i) => (
+                        <View key={`${s}-${i}`} style={styles.symptomRow}>
+                          <Text style={styles.symptomDot}>•</Text>
+                          <Text style={styles.symptomText}>{s}</Text>
+                        </View>
+                      ))
+                    ) : (
+                      <Text style={styles.emptyDetail}>Riwayat lama — daftar gejala tidak tersimpan. Hanya jumlah {selectedHistory.matchedSymptoms} gejala.</Text>
+                    )}
+
+                    {detail.guidance.length > 0 && (
+                      <>
+                        <Text style={styles.detailSection}>Pertolongan pertama</Text>
+                        {detail.guidance.map((g, i) => (
+                          <View key={i} style={styles.symptomRow}>
+                            <View style={styles.stepNum}><Text style={styles.stepNumText}>{i + 1}</Text></View>
+                            <Text style={styles.symptomText}>{g}</Text>
+                          </View>
+                        ))}
+                      </>
+                    )}
+
+                    {!!detail.doctorWhen && (
+                      <>
+                        <Text style={styles.detailSection}>Ke dokter bila</Text>
+                        <Text style={styles.doctorText}>{detail.doctorWhen}</Text>
+                      </>
+                    )}
+                  </ScrollView>
+
+                  <Pressable
+                    onPress={() => { setSelectedHistory(null); onNavigate('diagnosis'); }}
+                    style={styles.modalCta}
+                  >
+                    <Text style={styles.modalCtaText}>Cek Gejala Lagi</Text>
+                    <Ionicons name="arrow-forward" size={14} color={colors.white} />
+                  </Pressable>
+                </>
+              );
+            })()}
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -221,4 +302,22 @@ const styles = StyleSheet.create({
   educTitle: { color: colors.white, fontSize: 14, fontWeight: '900', lineHeight: 19, marginVertical: 10 },
   educReadRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   educRead: { color: '#E9F4FF', fontSize: 9 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(5,73,123,0.45)', justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%' },
+  modalHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  modalEmoji: { fontSize: 36 },
+  modalTitle: { fontSize: 17, fontWeight: '900', color: colors.ink, flexWrap: 'wrap' },
+  modalDate: { fontSize: 11, color: colors.muted, marginTop: 2, fontWeight: '700' },
+  modalClose: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F0F3F5', alignItems: 'center', justifyContent: 'center' },
+  modalDesc: { fontSize: 13, color: colors.muted, lineHeight: 19, marginBottom: 8 },
+  detailSection: { fontSize: 14, fontWeight: '900', color: colors.ink, marginTop: 14, marginBottom: 8 },
+  symptomRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
+  symptomDot: { fontSize: 14, color: colors.primary, fontWeight: '900' },
+  symptomText: { flex: 1, fontSize: 13, color: colors.ink, lineHeight: 19, fontWeight: '600' },
+  stepNum: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#EAF4FF', alignItems: 'center', justifyContent: 'center' },
+  stepNumText: { fontSize: 11, fontWeight: '900', color: colors.primary },
+  doctorText: { fontSize: 13, color: colors.muted, lineHeight: 19 },
+  emptyDetail: { fontSize: 12, color: colors.muted, fontStyle: 'italic' },
+  modalCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 13, marginTop: 16 },
+  modalCtaText: { color: colors.white, fontSize: 13, fontWeight: '800' },
 });

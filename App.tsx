@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Platform, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+// Web: SafeAreaView sering collapse jadi 0 di RNW — pakai View biasa untuk web
+const ScreenView: React.ComponentType<any> = Platform.OS === 'web' ? View : SafeAreaView;
 import { SplashScreen } from './src/screens/SplashScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -26,6 +28,10 @@ export interface DiagnosisHistoryEntry {
   emoji: string;
   date: string;
   matchedSymptoms: number;
+  symptomIds?: string[];
+  symptomNames?: string[];
+  guidance?: string[];
+  doctorWhen?: string;
 }
 
 type Route =
@@ -55,6 +61,17 @@ export default function App() {
   const [history, setHistory] = useState<DiagnosisHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState('');
+
+  // Web: hilangkan kotak outline/focus hitam-biru saat klik (Pressable/Touchable)
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const doc = (globalThis as any).document;
+    if (!doc || doc.getElementById('no-focus-box')) return;
+    const el = doc.createElement('style');
+    el.id = 'no-focus-box';
+    el.textContent = `*{ -webkit-tap-highlight-color: transparent !important; } *:focus, *:focus-visible, *:active { outline: none !important; box-shadow: none !important; } div[tabindex], [role="button"], a, button { outline: none !important; } input:focus, textarea:focus { outline: none !important; box-shadow: none !important; }`;
+    doc.head.appendChild(el);
+  }, []);
 
   // Load dari AsyncStorage — data tidak hilang walau app restart
   useEffect(() => {
@@ -118,7 +135,8 @@ export default function App() {
   };
 
   const handleRegister = async (name: string, email: string, babyDob: string, password: string) => {
-    const existing = await DB.findUserByEmail(email);
+    const clean = email.trim().toLowerCase();
+    const existing = await DB.findUserByEmail(clean);
     if (existing) {
       setLoginError('Email sudah terdaftar. Silakan Sign In.');
       setRoute({ name: 'login' });
@@ -127,17 +145,17 @@ export default function App() {
     const newUser: import('./src/storage/db').DbUser = {
       id: String(Date.now()),
       name,
-      email: email.toLowerCase(),
+      email: clean,
       babyDob,
       password,
       provider: 'email',
       createdAt: new Date().toISOString(),
     };
     await DB.upsertUser(newUser);
-    await DB.setCurrentEmail(newUser.email);
-    setUser({ name, email: newUser.email, babyDob });
+    await DB.setCurrentEmail(clean);
+    setUser({ name, email: clean, babyDob });
     setHistory([]);
-    await emailService.sendWelcome(newUser.email, name, 'email');
+    await emailService.sendWelcome(clean, name, 'email');
     goMain('home');
   };
 
@@ -163,12 +181,12 @@ export default function App() {
 
   const wrapWeb = (content: React.ReactNode) => {
     if (Platform.OS !== 'web') return content;
-    return <View style={styles.webOuter}><View style={styles.webPhone}>{content}</View></View>;
+    return <View style={styles.webOuter}><View style={styles.webPhone}><View style={styles.webPhoneInner}>{content}</View></View></View>;
   };
 
   if (route.name === 'splash') {
     return wrapWeb(
-      <SafeAreaView style={styles.safe}>
+      <ScreenView style={styles.safe}>
         <SplashScreen onFinish={() => setSplashDone(true)} />
         <StatusBar style="light" />
         {loading && (
@@ -177,22 +195,22 @@ export default function App() {
             <Text style={styles.loadingText}>Memuat data...</Text>
           </View>
         )}
-      </SafeAreaView>
+      </ScreenView>
     );
   }
 
   if (route.name === 'onboarding') {
     return wrapWeb(
-      <SafeAreaView style={styles.safe}>
+      <ScreenView style={styles.safe}>
         <OnboardingScreen onFinish={() => setRoute({ name: 'login' })} />
         <StatusBar style="light" />
-      </SafeAreaView>
+      </ScreenView>
     );
   }
 
   if (route.name === 'login') {
     return wrapWeb(
-      <SafeAreaView style={styles.safe}>
+      <ScreenView style={styles.safe}>
         <LoginScreen
           onLogin={handleLogin}
           onGoRegister={() => { setLoginError(''); setRoute({ name: 'register' }); }}
@@ -200,56 +218,56 @@ export default function App() {
           initialError={loginError}
         />
         <StatusBar style="light" />
-      </SafeAreaView>
+      </ScreenView>
     );
   }
 
   if (route.name === 'register') {
     return wrapWeb(
-      <SafeAreaView style={styles.safe}>
+      <ScreenView style={styles.safe}>
         <RegisterScreen onRegister={handleRegister} onGoLogin={() => { setLoginError(''); setRoute({ name: 'login' }); }} />
         <StatusBar style="light" />
-      </SafeAreaView>
+      </ScreenView>
     );
   }
 
   if (route.name === 'forgot') {
     return wrapWeb(
-      <SafeAreaView style={styles.safe}>
+      <ScreenView style={styles.safe}>
         <ForgotPasswordScreen onBack={() => { setLoginError(''); setRoute({ name: 'login' }); }} onResetSuccess={(email) => { setLoginError('Password berhasil direset. Silakan Sign In.'); setRoute({ name: 'login' }); }} />
         <StatusBar style="light" />
-      </SafeAreaView>
+      </ScreenView>
     );
   }
 
   if (route.name === 'record') {
     return wrapWeb(
-      <SafeAreaView style={styles.safe}>
+      <ScreenView style={styles.safe}>
         <RecordScreen
           onBack={() => goMain('home')}
           onResult={(prediction) => setRoute({ name: 'result', prediction })}
         />
         <StatusBar style="light" />
-      </SafeAreaView>
+      </ScreenView>
     );
   }
 
   if (route.name === 'result') {
     return wrapWeb(
-      <SafeAreaView style={styles.safe}>
+      <ScreenView style={styles.safe}>
         <ResultScreen
           prediction={route.prediction}
           onBack={() => setRoute({ name: 'record' })}
           onHome={() => goMain('home')}
         />
         <StatusBar style="light" />
-      </SafeAreaView>
+      </ScreenView>
     );
   }
 
   const babyAge = getAgeMonths(user?.babyDob);
   return wrapWeb(
-    <SafeAreaView style={styles.safe}>
+    <ScreenView style={styles.safe}>
       {route.tab === 'home' && <HomeScreen userName={user?.name} babyAge={babyAge} history={history} onNavigate={(tab) => goMain(tab)} onRecord={() => setRoute({ name: 'record' })} />}
       {route.tab === 'diagnosis' && <DiagnosisScreen onSaveHistory={addHistory} />}
       {route.tab === 'education' && <EducationScreen />}
@@ -260,43 +278,52 @@ export default function App() {
         onRecord={() => setRoute({ name: 'record' })}
       />
       <StatusBar style="dark" />
-    </SafeAreaView>
+    </ScreenView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    height: '100%' as any,
     width: '100%' as any,
-    backgroundColor: colors.primaryDarker,
-  },
-  // Web: tampil mobile di tengah (390x844) biar di HP & website sama
-  webOuter: {
-    flex: 1,
-    backgroundColor: '#0A2A42',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    minHeight: '100vh' as any,
-  } as any,
-  webPhone: {
-    width: 390,
-    maxWidth: '100%',
-    height: 844,
-    maxHeight: '90vh' as any,
-    backgroundColor: colors.primaryDarker,
-    borderRadius: 32,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    height: '100%' as any,
+    minHeight: 0 as any,
     display: 'flex' as any,
     flexDirection: 'column' as any,
+    backgroundColor: colors.primaryDarker,
+  } as any,
+  // Web: pakai dvh biar tidak kepotong toolbar browser HP, center di desktop tapi fullscreen di HP
+  webOuter: {
+    flex: 1,
+    backgroundColor: colors.primaryDarker,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    minHeight: '100dvh' as any,
+    height: '100dvh' as any,
+    width: '100%' as any,
+  } as any,
+  webPhone: {
+    width: '100%',
+    maxWidth: 390 as any,
+    height: '100dvh' as any,
+    maxHeight: '100dvh' as any,
+    minHeight: '100dvh' as any,
+    backgroundColor: colors.primaryDarker,
+    overflow: 'hidden',
+    display: 'flex' as any,
+    flexDirection: 'column' as any,
+    borderWidth: 0,
+    borderRadius: 0,
+    boxShadow: 'none' as any,
+    elevation: 0,
+  } as any,
+  webPhoneInner: {
+    flex: 1,
+    display: 'flex' as any,
+    flexDirection: 'column' as any,
+    minHeight: 0 as any,
+    backgroundColor: colors.primaryDarker,
   } as any,
   loadingOverlay: {
     position: 'absolute',

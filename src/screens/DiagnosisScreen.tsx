@@ -8,7 +8,17 @@ import { runForwardChaining } from '../model/forwardChaining';
 import { colors, font, radius, shadow, spacing } from '../theme/tokens';
 
 interface Props {
-  onSaveHistory?: (entry: { conditionName: string; description: string; severity: string; emoji: string; matchedSymptoms: number }) => void;
+  onSaveHistory?: (entry: {
+    conditionName: string;
+    description: string;
+    severity: string;
+    emoji: string;
+    matchedSymptoms: number;
+    symptomIds: string[];
+    symptomNames: string[];
+    guidance: string[];
+    doctorWhen: string;
+  }) => void;
 }
 
 export function DiagnosisScreen({ onSaveHistory }: Props) {
@@ -21,12 +31,18 @@ export function DiagnosisScreen({ onSaveHistory }: Props) {
 
   const handleShowResult = () => {
     setShowResult(true);
+    const allSymptoms = symptomCategories.flatMap((c) => c.symptoms);
+    const symptomNames = selected.map((id) => allSymptoms.find((s) => s.id === id)?.name ?? id);
     onSaveHistory?.({
       conditionName: condition.name,
       description: condition.description,
       severity: condition.severity,
       emoji: condition.emoji,
       matchedSymptoms: selected.length,
+      symptomIds: [...selected],
+      symptomNames,
+      guidance: condition.guidance,
+      doctorWhen: condition.doctorWhen,
     });
   };
 
