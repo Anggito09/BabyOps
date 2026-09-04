@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { articles } from '../data/articles';
@@ -16,9 +16,40 @@ interface Props {
   onRecord: () => void;
 }
 
+function FadeInRow({ index = 0, children }: { index?: number; children: React.ReactNode }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translate = useRef(new Animated.Value(12)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 350, delay: index * 70, useNativeDriver: true }),
+      Animated.timing(translate, { toValue: 0, duration: 350, delay: index * 70, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return <Animated.View style={{ opacity, transform: [{ translateY: translate }] }}>{children}</Animated.View>;
+}
+
 export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate, onRecord }: Props) {
   const displayName = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : 'Anggito Karta Wijaya';
   const [selectedHistory, setSelectedHistory] = useState<DiagnosisHistoryEntry | null>(null);
+  const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(60)).current;
+  const scale = useRef(new Animated.Value(0.96)).current;
+  const pop = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (selectedHistory) {
+      fade.setValue(0);
+      slide.setValue(60);
+      scale.setValue(0.96);
+      pop.setValue(0);
+      Animated.parallel([
+        Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.spring(slide, { toValue: 0, damping: 18, stiffness: 180, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1, damping: 14, stiffness: 180, useNativeDriver: true }),
+        Animated.spring(pop, { toValue: 1, damping: 8, stiffness: 160, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [selectedHistory?.id]);
 
   const getDetail = (h: DiagnosisHistoryEntry) => {
     const known = (Object.values(conditions) as Array<{ name: string; guidance: string[]; doctorWhen: string }>).find(
@@ -68,7 +99,11 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
             </View>
           ) : (
             history.slice(0, 2).map((h) => (
-              <Pressable key={h.id} style={styles.historyCard} onPress={() => setSelectedHistory(h)}>
+              <Pressable
+                key={h.id}
+                style={({ pressed }) => [styles.historyCard, pressed && { transform: [{ scale: 0.97 }], opacity: 0.92 }]}
+                onPress={() => setSelectedHistory(h)}
+              >
                 <View style={styles.historyTopRow}>
                   <Text style={styles.historyEmoji}>{h.emoji}</Text>
                   <View style={[styles.severityMini, { backgroundColor: h.severity === 'perlu perhatian' ? '#FFD9D5' : h.severity === 'sedang' ? '#FFF0D1' : '#E0F5E4' }]}>
@@ -122,15 +157,19 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
         </View>
       </ScrollView>
 
-      <Modal visible={!!selectedHistory} animationType="slide" transparent onRequestClose={() => setSelectedHistory(null)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
+      <Modal visible={!!selectedHistory} animationType="none" transparent onRequestClose={() => setSelectedHistory(null)}>
+        <Animated.View style={[styles.modalBackdrop, { opacity: fade }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelectedHistory(null)} />
+          <Animated.View style={[styles.modalSheet, { transform: [{ translateY: slide }, { scale }] }]}>
             {selectedHistory && (() => {
               const detail = getDetail(selectedHistory);
+              const popScale = pop.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] });
               return (
                 <>
                   <View style={styles.modalHead}>
-                    <Text style={styles.modalEmoji}>{selectedHistory.emoji}</Text>
+                    <Animated.View style={{ transform: [{ scale: popScale }] }}>
+                      <Text style={styles.modalEmoji}>{selectedHistory.emoji}</Text>
+                    </Animated.View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.modalTitle}>{selectedHistory.conditionName}</Text>
                       <Text style={styles.modalDate}>{selectedHistory.date} • {selectedHistory.matchedSymptoms} gejala</Text>
@@ -141,15 +180,21 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
                   </View>
 
                   <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
-                    <Text style={styles.modalDesc}>{selectedHistory.description}</Text>
+                    <FadeInRow index={0}>
+                      <Text style={styles.modalDesc}>{selectedHistory.description}</Text>
+                    </FadeInRow>
 
-                    <Text style={styles.detailSection}>Gejala yang dicentang</Text>
+                    <FadeInRow index={1}>
+                      <Text style={styles.detailSection}>Gejala yang dicentang</Text>
+                    </FadeInRow>
                     {detail.symptomNames.length > 0 ? (
                       detail.symptomNames.map((s, i) => (
-                        <View key={`${s}-${i}`} style={styles.symptomRow}>
-                          <Text style={styles.symptomDot}>•</Text>
-                          <Text style={styles.symptomText}>{s}</Text>
-                        </View>
+                        <FadeInRow key={`${selectedHistory.id}-${s}-${i}`} index={2 + i}>
+                          <View style={styles.symptomRow}>
+                            <Text style={styles.symptomDot}>•</Text>
+                            <Text style={styles.symptomText}>{s}</Text>
+                          </View>
+                        </FadeInRow>
                       ))
                     ) : (
                       <Text style={styles.emptyDetail}>Riwayat lama — daftar gejala tidak tersimpan. Hanya jumlah {selectedHistory.matchedSymptoms} gejala.</Text>
@@ -157,27 +202,33 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
 
                     {detail.guidance.length > 0 && (
                       <>
-                        <Text style={styles.detailSection}>Pertolongan pertama</Text>
+                        <FadeInRow index={3}>
+                          <Text style={styles.detailSection}>Pertolongan pertama</Text>
+                        </FadeInRow>
                         {detail.guidance.map((g, i) => (
-                          <View key={i} style={styles.symptomRow}>
-                            <View style={styles.stepNum}><Text style={styles.stepNumText}>{i + 1}</Text></View>
-                            <Text style={styles.symptomText}>{g}</Text>
-                          </View>
+                          <FadeInRow key={`${selectedHistory.id}-g-${i}`} index={4 + i}>
+                            <View style={styles.symptomRow}>
+                              <View style={styles.stepNum}><Text style={styles.stepNumText}>{i + 1}</Text></View>
+                              <Text style={styles.symptomText}>{g}</Text>
+                            </View>
+                          </FadeInRow>
                         ))}
                       </>
                     )}
 
                     {!!detail.doctorWhen && (
-                      <>
-                        <Text style={styles.detailSection}>Ke dokter bila</Text>
-                        <Text style={styles.doctorText}>{detail.doctorWhen}</Text>
-                      </>
+                      <FadeInRow index={7}>
+                        <>
+                          <Text style={styles.detailSection}>Ke dokter bila</Text>
+                          <Text style={styles.doctorText}>{detail.doctorWhen}</Text>
+                        </>
+                      </FadeInRow>
                     )}
                   </ScrollView>
 
                   <Pressable
                     onPress={() => { setSelectedHistory(null); onNavigate('diagnosis'); }}
-                    style={styles.modalCta}
+                    style={({ pressed }) => [styles.modalCta, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
                   >
                     <Text style={styles.modalCtaText}>Cek Gejala Lagi</Text>
                     <Ionicons name="arrow-forward" size={14} color={colors.white} />
@@ -185,8 +236,8 @@ export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate,
                 </>
               );
             })()}
-          </View>
-        </View>
+          </Animated.View>
+        </Animated.View>
       </Modal>
     </LinearGradient>
   );
