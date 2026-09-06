@@ -72,24 +72,30 @@ export function RecordScreen({ onBack, onResult }: Props) {
       const uri = audioRecorder.uri;
       let prediction: CryPrediction | null = null;
       if (uri) {
-        // dekode file audio via fetch + AudioContext (web) atau fallback classifier.classify
+        // dekode file audio via fetch + AudioContext (web) — SVM RBF 90% akan dipakai jika berhasil
         try {
           const res = await fetch(uri);
           const buf = await res.arrayBuffer();
-          // web: decode via AudioContext
           const AudioCtx = (globalThis as any).AudioContext || (globalThis as any).webkitAudioContext;
           if (AudioCtx) {
-            const ctx = new AudioCtx({ sampleRate: 16000 });
+            // jangan paksa sampleRate 16000 di konstruktor (banyak browser mobile reject) — resample ditangani mfcc.ts
+            const ctx = new AudioCtx();
             const audioBuf = await ctx.decodeAudioData(buf.slice(0));
             const ch = audioBuf.getChannelData(0) as Float32Array;
+            console.log('[BabyOps] decode ok', audioBuf.sampleRate, ch.length);
             prediction = await (classifier as any).classifyFeatures(ch, audioBuf.sampleRate);
+            console.log('[BabyOps] SVM prediction', prediction);
             ctx.close?.();
+          } else {
+            console.warn('[BabyOps] AudioContext tidak tersedia');
           }
         } catch (e) {
-          console.warn('Dekode audio gagal, fallback:', e);
+          console.warn('[BabyOps] Dekode audio gagal, fallback:', e);
         }
       }
       if (!prediction) {
+        // JANGAN fallback 20% diam-diam — beri log agar ketahuan kalau decode gagal
+        console.warn('[BabyOps] Fallback classify tanpa audio (akan 20%) — cek log decode di atas');
         prediction = await classifier.classify({ mfcc: [], durationSec: seconds });
       }
       setTimeout(() => onResult(prediction!), 300);
@@ -133,7 +139,7 @@ export function RecordScreen({ onBack, onResult }: Props) {
           disabled={processing}
         >
           <Ionicons name={processing ? 'hourglass' : recording ? 'stop' : 'mic'} color={colors.white} size={20} />
-          <Text style={styles.recordBtnText}>{processing ? 'Memproses MFCC + KNN…' : recording ? 'Selesai' : 'Mulai rekam'}</Text>
+          <Text style={styles.recordBtnText}>{processing ? 'Memproses MFCC + SVM…' : recording ? 'Selesai' : 'Mulai rekam'}</Text>
         </Pressable>
         <Text style={styles.hint}>{processing ? 'Sabar, analisis berjalan…' : recording ? 'Ketuk Selesai untuk analisis' : 'Ketuk untuk mulai • hindari suara bising'}</Text>
       </View>
