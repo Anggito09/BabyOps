@@ -37,6 +37,7 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], o
   const babyDisplay = cap(babyName) || 'Si Kecil';
   const parentDisplay = cap(userName);
   const [selectedHistory, setSelectedHistory] = useState<DiagnosisHistoryEntry | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(60)).current;
   const scale = useRef(new Animated.Value(0.96)).current;
@@ -92,7 +93,13 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], o
           {/* Disease History — pink FDE5E4 */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Riwayat Kesehatan</Text>
-            <Text style={styles.date}>{history.length > 0 ? history[0].date : '—'}</Text>
+            {history.length > 2 ? (
+              <Pressable onPress={() => setShowAll(true)} hitSlop={8}>
+                <Text style={styles.seeAll}>Lihat semua →</Text>
+              </Pressable>
+            ) : (
+              <Text style={styles.date}>{history.length > 0 ? history[0].date : '—'}</Text>
+            )}
           </View>
           {history.length === 0 ? (
             <View style={styles.emptyHistoryCard}>
@@ -118,7 +125,9 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], o
                 </View>
                 <Text style={styles.historyTitle}>{h.conditionName}</Text>
                 <Text style={styles.historyBody} numberOfLines={2}>{h.description}</Text>
-                <Text style={styles.more}>{h.date} • {h.matchedSymptoms} gejala →</Text>
+                <Text style={styles.more}>
+                  {h.kind === 'cry' ? `Tangisan · keyakinan ${h.confidence ?? 0}%` : `${h.matchedSymptoms} gejala`} • {h.date} →
+                </Text>
               </Pressable>
             ))
           )}
@@ -162,6 +171,44 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], o
           </View>
         </View>
       </ScrollView>
+
+      <Modal visible={showAll} animationType="slide" transparent onRequestClose={() => setShowAll(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHead}>
+              <Text style={styles.modalEmoji}>📋</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Semua Riwayat</Text>
+                <Text style={styles.modalDate}>{history.length} entri · diagnosa + tangisan</Text>
+              </View>
+              <Pressable onPress={() => setShowAll(false)} hitSlop={10} style={styles.modalClose}>
+                <Ionicons name="close" size={20} color={colors.muted} />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8, gap: 10 }}>
+              {history.map((h) => (
+                <Pressable
+                  key={h.id}
+                  style={styles.historyCard}
+                  onPress={() => { setShowAll(false); setSelectedHistory(h); }}
+                >
+                  <View style={styles.historyTopRow}>
+                    <Text style={styles.historyEmoji}>{h.emoji}</Text>
+                    <View style={[styles.kindPill, { backgroundColor: h.kind === 'cry' ? '#EAF4FF' : '#FFF0D1' }]}>
+                      <Text style={[styles.kindPillText, { color: h.kind === 'cry' ? colors.primary : '#8A6A00' }]}>
+                        {h.kind === 'cry' ? 'TANGISAN' : 'DIAGNOSA'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.historyTitle}>{h.conditionName}</Text>
+                  <Text style={styles.historyBody} numberOfLines={2}>{h.description}</Text>
+                  <Text style={styles.more}>{h.date} →</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={!!selectedHistory} animationType="none" transparent onRequestClose={() => setSelectedHistory(null)}>
         <Animated.View style={[styles.modalBackdrop, { opacity: fade }]}>
@@ -303,6 +350,9 @@ const styles = StyleSheet.create({
   emptyCta: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, marginTop: 4 },
   emptyCtaText: { color: colors.white, fontSize: 12, fontWeight: '800' },
   historyTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  seeAll: { fontSize: 11, color: colors.primary, fontWeight: '800' },
+  kindPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  kindPillText: { fontSize: 10, fontWeight: '800' },
   historyEmoji: { fontSize: 22 },
   severityMini: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
   severityMiniText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },

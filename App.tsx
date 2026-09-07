@@ -21,8 +21,17 @@ import { CryPrediction } from './src/model/cryClassifier';
 import * as DB from './src/storage/db';
 import { emailService } from './src/services/emailService';
 
+function formatDateTime(d: Date): string {
+  const date = d.toLocaleDateString('id-ID');
+  const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  return `${date} • ${time}`;
+}
+
+export type HistoryKind = 'diagnosis' | 'cry';
+
 export interface DiagnosisHistoryEntry {
   id: string;
+  kind: HistoryKind;
   conditionName: string;
   description: string;
   severity: string;
@@ -33,6 +42,9 @@ export interface DiagnosisHistoryEntry {
   symptomNames?: string[];
   guidance?: string[];
   doctorWhen?: string;
+  cryLabel?: string;
+  cryMeaning?: string;
+  confidence?: number;
 }
 
 type Route =
@@ -179,13 +191,14 @@ export default function App() {
     setRoute({ name: 'login' });
   };
 
-  const addHistory = async (entry: Omit<DiagnosisHistoryEntry, 'id' | 'date'>) => {
+  const addHistory = async (entry: Omit<DiagnosisHistoryEntry, 'id' | 'date' | 'kind'> & { kind?: HistoryKind }) => {
     const newEntry: DiagnosisHistoryEntry = {
+      kind: 'diagnosis',
       ...entry,
       id: String(Date.now()),
-      date: new Date().toLocaleDateString('id-ID'),
+      date: formatDateTime(new Date()),
     };
-    const next = [newEntry, ...history].slice(0, 10);
+    const next = [newEntry, ...history].slice(0, 20);
     setHistory(next);
     if (user?.email) await DB.saveHistory(user.email, next);
     // Riset opt-in: simpan gejala + hasil diagnosa anonim (TANPA nama/email)
@@ -278,13 +291,32 @@ export default function App() {
     );
   }
 
+  const addCryHistory = async (prediction: CryPrediction) => {
+    const { dunstanClasses } = await import('./src/data/dunstan');
+    const result = dunstanClasses[prediction.label];
+    await addHistory({
+      kind: 'cry',
+      conditionName: `"${prediction.label}" — ${result.meaning}`,
+      description: result.description,
+      severity: 'ringan',
+      emoji: result.emoji,
+      matchedSymptoms: 0,
+      guidance: result.actions,
+      doctorWhen: 'Jika bayi tampak sangat kesakitan, sulit bernapas, muntah berulang, atau keluhan tidak membaik.',
+      cryLabel: prediction.label,
+      cryMeaning: result.meaning,
+      confidence: Math.round(prediction.confidence * 100),
+    });
+    goMain('home');
+  };
+
   if (route.name === 'result') {
     return wrapWeb(
       <ScreenView style={styles.safe}>
         <ResultScreen
           prediction={route.prediction}
           onBack={() => setRoute({ name: 'record' })}
-          onHome={() => goMain('home')}
+          onHome={() => addCryHistory(route.prediction)}
         />
         <StatusBar style="light" />
       </ScreenView>
