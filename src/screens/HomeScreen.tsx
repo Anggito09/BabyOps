@@ -30,8 +30,12 @@ function FadeInRow({ index = 0, children }: { index?: number; children: React.Re
 }
 
 export function HomeScreen({ userName, babyName, babyAge = '03', history = [], onNavigate, onRecord }: Props) {
-  const rawName = babyName?.trim() || userName?.trim() || '';
-  const displayName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : 'Si Kecil';
+  const cap = (s?: string) => {
+    const t = (s ?? '').trim();
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+  };
+  const babyDisplay = cap(babyName) || 'Si Kecil';
+  const parentDisplay = cap(userName);
   const [selectedHistory, setSelectedHistory] = useState<DiagnosisHistoryEntry | null>(null);
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(60)).current;
@@ -79,8 +83,8 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], o
         </View>
 
         <View style={styles.greetBlock}>
-          <Text style={styles.hello}>Selamat pagi, Parents!</Text>
-          <Text style={styles.name}>{displayName}</Text>
+          <Text style={styles.hello}>Selamat pagi, Baby {babyDisplay}! 👶</Text>
+          {parentDisplay ? <Text style={styles.parentName}>Bunda/Yanda {parentDisplay}</Text> : null}
         </View>
 
         {/* White content card — rounded top seperti di screenshot */}
@@ -269,8 +273,8 @@ const styles = StyleSheet.create({
   ageNum: { color: colors.primary, fontSize: 26, fontWeight: '900', lineHeight: 28 },
   ageText: { color: colors.muted, fontSize: 10, fontWeight: '700' },
   greetBlock: { paddingHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.lg },
-  hello: { color: '#CBEFFF', fontSize: 12 },
-  name: { color: colors.white, fontSize: 20, fontWeight: '900', marginTop: 4 },
+  hello: { color: colors.white, fontSize: 20, fontWeight: '900' },
+  parentName: { color: '#CBEFFF', fontSize: 12, fontWeight: '700', marginTop: 4 },
   contentCard: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 28,
