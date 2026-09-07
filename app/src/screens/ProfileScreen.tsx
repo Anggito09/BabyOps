@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients, spacing } from '../theme/tokens';
 import { CalendarPicker } from '../components/CalendarPicker';
+import { getImmunizationStatus } from '../data/immunization';
 
 interface Props {
   user?: { name: string; email: string; babyDob?: string; babyName?: string; babyGender?: string; phone?: string; address?: string } | null;
@@ -220,32 +221,80 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
               </View>
             )}
 
-            {mode === 'reminder' && (
-              <View style={styles.form}>
-                <View style={styles.reminderCard}>
-                  <Image source={require('../../assets/onboarding-baby-cry.png')} style={styles.reminderImg} resizeMode="contain" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.reminderTitle}>Jadwal Imunisasi</Text>
-                    <Text style={styles.reminderDesc}>Pengingat otomatis akan hadir. Untuk sekarang, cek di menu Edukasi untuk panduan usia {babyAge} bulan.</Text>
-                  </View>
-                </View>
-                <View style={styles.reminderList}>
-                  {[
-                    ['Hari ini', 'Cek tangisan bayi', '09:00'],
-                    ['Minggu ini', 'Kontrol posyandu', 'Segera'],
-                  ].map(([a, b, c]) => (
-                    <View key={b} style={styles.reminderRow}>
-                      <View style={styles.reminderDot} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.reminderRowTitle}>{b}</Text>
-                        <Text style={styles.reminderRowSub}>{a}</Text>
-                      </View>
-                      <Text style={styles.reminderTime}>{c}</Text>
+            {mode === 'reminder' && (() => {
+              const ageNum = parseInt(babyAge, 10) || 0;
+              const { done, due, upcoming } = getImmunizationStatus(ageNum);
+              return (
+                <View style={styles.form}>
+                  <View style={styles.reminderCard}>
+                    <Image source={require('../../assets/onboarding-baby-cry.png')} style={styles.reminderImg} resizeMode="contain" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.reminderTitle}>Jadwal Imunisasi (IDAI)</Text>
+                      <Text style={styles.reminderDesc}>
+                        Usia bayi {ageNum} bulan · {done.length} jadwal lewat · {due ? '1 perlu perhatian' : 'semua dasar selesai'}
+                      </Text>
                     </View>
-                  ))}
+                  </View>
+
+                  {due && (
+                    <>
+                      <Text style={styles.label}>Perlu perhatian — usia {due.ageLabel}</Text>
+                      <View style={styles.dueCard}>
+                        <View style={styles.dueBadge}>
+                          <Ionicons name="alert-circle" size={14} color={colors.white} />
+                          <Text style={styles.dueBadgeText}>JADWAL INI</Text>
+                        </View>
+                        {due.vaccines.map((v) => (
+                          <View key={v} style={styles.vaccineRow}>
+                            <Ionicons name="shield-checkmark" size={15} color={colors.primary} />
+                            <Text style={styles.vaccineText}>{v}</Text>
+                          </View>
+                        ))}
+                        {due.note ? <Text style={styles.vaccineNote}>{due.note}</Text> : null}
+                        <Text style={styles.vaccineNote}>Bawa buku KIA & konsultasikan ke puskesmas/posyandu/dokter.</Text>
+                      </View>
+                    </>
+                  )}
+
+                  {upcoming.length > 0 && (
+                    <>
+                      <Text style={styles.label}>Berikutnya</Text>
+                      <View style={styles.reminderList}>
+                        {upcoming.slice(0, 3).map((u) => (
+                          <View key={u.ageLabel} style={styles.reminderRow}>
+                            <View style={styles.reminderDot} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.reminderRowTitle}>{u.vaccines.join(', ')}</Text>
+                              <Text style={styles.reminderRowSub}>Usia {u.ageLabel}</Text>
+                            </View>
+                            <Text style={styles.reminderTime}>{u.ageLabel}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  )}
+
+                  {done.length > 0 && (
+                    <>
+                      <Text style={styles.label}>Sudah lewat ({done.length})</Text>
+                      <View style={styles.reminderList}>
+                        {done.slice(-3).reverse().map((d) => (
+                          <View key={d.ageLabel} style={[styles.reminderRow, styles.reminderRowDone]}>
+                            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.reminderRowTitle}>{d.vaccines.join(', ')}</Text>
+                              <Text style={styles.reminderRowSub}>Usia {d.ageLabel} · pastikan sudah dicatat di KIA</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  )}
+
+                  <Text style={styles.hint}>Mengacu IDAI 2023 (disederhanakan). Jadwal pasti mengikuti buku KIA & anjuran dokter.</Text>
                 </View>
-              </View>
-            )}
+              );
+            })()}
 
             {mode === 'privacy' && (
               <View style={styles.form}>
@@ -351,6 +400,13 @@ const styles = StyleSheet.create({
   reminderRowTitle: { fontSize: 12, fontWeight: '800', color: colors.ink },
   reminderRowSub: { fontSize: 11, color: colors.muted },
   reminderTime: { fontSize: 11, fontWeight: '800', color: colors.primary },
+  dueCard: { backgroundColor: '#FFF0F1', borderRadius: 16, padding: 14, borderWidth: 1.5, borderColor: '#FFC9CE' },
+  dueBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', backgroundColor: colors.danger, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginBottom: 8 },
+  dueBadgeText: { color: colors.white, fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  vaccineRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
+  vaccineText: { flex: 1, fontSize: 13, fontWeight: '800', color: colors.ink },
+  vaccineNote: { fontSize: 11, color: colors.muted, lineHeight: 16, marginTop: 6 },
+  reminderRowDone: { opacity: 0.85 },
   privacyHead: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EAF4FF', borderRadius: 14, padding: 12 },
   privacyImg: { width: 44, height: 44 },
   privacyTitle: { fontSize: 14, fontWeight: '900', color: colors.ink },
