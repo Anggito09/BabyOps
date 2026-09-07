@@ -84,7 +84,7 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], o
 
         <View style={styles.greetBlock}>
           <Text style={styles.hello}>Selamat pagi, Baby {babyDisplay}! 👶</Text>
-          {parentDisplay ? <Text style={styles.parentName}>Bunda/Yanda {parentDisplay}</Text> : null}
+          {parentDisplay ? <Text style={styles.parentName}>Orang tua: {parentDisplay}</Text> : null}
         </View>
 
         {/* White content card — rounded top seperti di screenshot */}
