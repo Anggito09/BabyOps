@@ -44,14 +44,18 @@ const symptomNames = {
   'nafsu-turun': 'Nafsu makan turun',
 };
 
+const DANGER = ['menolak-susu', 'lemas', 'napas-cepat', 'ditarik-dada', 'wheezing', 'kuning', 'demam'];
+
 const conditions = {
-  Konjungtivitis: { name: 'Konjungtivitis (Irisasi Mata)', severity: 'ringan' },
-  'Flu & Batuk Pilek': { name: 'Flu & Batuk Pilek', severity: 'ringan' },
-  Bronkiolitis: { name: 'Bronkiolitis', severity: 'perlu perhatian' },
-  'Gangguan Pencernaan': { name: 'Gangguan Pencernaan', severity: 'sedang' },
-  'Iritasi Kulit': { name: 'Iritasi Kulit', severity: 'ringan' },
-  Demam: { name: 'Demam', severity: 'perlu perhatian' },
-  'Kondisi Umum Ringan': { name: 'Kondisi Umum Ringan', severity: 'ringan' },
+  Konjungtivitis: { name: 'Kemungkinan Konjungtivitis', severity: 'ringan' },
+  'Flu & Batuk Pilek': { name: 'Kemungkinan Flu & Batuk Pilek', severity: 'ringan' },
+  Bronkiolitis: { name: 'Kemungkinan Bronkiolitis', severity: 'perlu perhatian' },
+  'Gangguan Pencernaan': { name: 'Kemungkinan Gangguan Pencernaan', severity: 'sedang' },
+  'Iritasi Kulit': { name: 'Kemungkinan Iritasi Kulit', severity: 'ringan' },
+  Demam: { name: 'Kemungkinan Demam / Infeksi', severity: 'perlu perhatian' },
+  'Kondisi Umum Ringan': { name: 'Belum Ada Pola Khusus (Ringan)', severity: 'ringan' },
+  'Perlu Pemeriksaan Segera': { name: 'Perlu Pemeriksaan Tenaga Medis Segera', severity: 'darurat' },
+  'Gejala Campuran': { name: 'Kemungkinan Gangguan Kesehatan (Gejala Campuran)', severity: 'sedang' },
 };
 
 const rules = [
@@ -75,37 +79,40 @@ const rules = [
 ];
 
 function runForwardChaining(selected) {
+  const danger = selected.filter((s) => DANGER.includes(s));
   const fired = rules.filter((r) => r.when.every((s) => selected.includes(s)));
-  if (fired.length === 0) {
-    return { condition: 'Kondisi Umum Ringan', matchedRules: 0, fired: [] };
-  }
   const counts = new Map();
   for (const r of fired) counts.set(r.then, (counts.get(r.then) ?? 0) + 1);
-  let best = '';
-  let bestCount = -1;
-  for (const [name, count] of counts) {
-    if (count > bestCount) {
-      best = name;
-      bestCount = count;
-    }
+  const firedConds = [...counts.keys()];
+  if (danger.length > 0) {
+    return { condition: 'Perlu Pemeriksaan Segera', matchedRules: fired.length, fired, danger, firedConds };
   }
+  if (fired.length === 0) {
+    return { condition: 'Kondisi Umum Ringan', matchedRules: 0, fired: [], danger, firedConds };
+  }
+  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const mixed = firedConds.length > 1 && sorted.length > 1 && sorted[0][1] < sorted[1][1] * 2;
   return {
-    condition: conditions[best] ? best : 'Kondisi Umum Ringan',
+    condition: mixed ? 'Gejala Campuran' : sorted[0][0],
     matchedRules: fired.length,
     fired,
+    danger,
+    firedConds,
   };
 }
 
-// Preset: satu contoh untuk tiap kondisi (beberapa model kasus)
+// Preset: contoh tiap lapisan (ringan, darurat, campuran, fallback)
 const presets = [
-  { label: 'Konjungtivitis', selected: ['mata-merah', 'keputihan-mata'] },
-  { label: 'Flu & Batuk Pilek', selected: ['hidung-tersumbat', 'bersin'] },
-  { label: 'Bronkiolitis', selected: ['batuk', 'napas-cepat', 'ditarik-dada'] },
-  { label: 'Gangguan Pencernaan', selected: ['muntah', 'diare'] },
-  { label: 'Iritasi Kulit', selected: ['ruam'] },
-  { label: 'Demam', selected: ['demam', 'batuk'] },
-  { label: 'Kondisi Umum Ringan', selected: ['rewel-berkepanjangan'] },
-  { label: 'Tidak cocok (fallback)', selected: ['kuning'] },
+  { label: 'Konjungtivitis (2 gejala)', selected: ['mata-merah', 'keputihan-mata'] },
+  { label: 'Flu (2 gejala)', selected: ['hidung-tersumbat', 'bersin'] },
+  { label: 'Pencernaan murni (2 gejala)', selected: ['muntah', 'diare'] },
+  { label: 'Iritasi kulit (1 gejala)', selected: ['ruam'] },
+  { label: 'Ringan fallback (1 gejala)', selected: ['rewel-berkepanjangan'] },
+  { label: 'DARURAT kuning (1 gejala)', selected: ['kuning'] },
+  { label: 'DARURAT demam (1 gejala)', selected: ['demam'] },
+  { label: 'DARURAT sesak (3 gejala)', selected: ['batuk', 'napas-cepat', 'ditarik-dada'] },
+  { label: 'CAMPURAN mata+hidung (5 gejala)', selected: ['mata-merah', 'keputihan-mata', 'hidung-tersumbat', 'bersin', 'rewel-berkepanjangan'] },
+  { label: 'KASUS LAPORAN (7 gejala)', selected: ['menolak-susu', 'muntah', 'bersin', 'rewel-berkepanjangan', 'nafsu-turun', 'lemas', 'napas-cepat'] },
 ];
 
 function printResult(title, selected) {
@@ -115,6 +122,7 @@ function printResult(title, selected) {
   console.log(`\n=== ${title} ===`);
   console.log(`Gejala (${selected.length}): ${selected.map((s) => symptomNames[s] ?? s).join(', ') || '-'}`);
   if (unknown.length > 0) console.log(`ID tidak dikenal: ${unknown.join(', ')}`);
+  if (outcome.danger.length > 0) console.log(`TANDA BAHAYA: ${outcome.danger.join(', ')}`);
   console.log(`Hasil: ${cond.name} [${cond.severity}]`);
   console.log(`Aturan cocok: ${outcome.matchedRules}`);
   outcome.fired.forEach((r) => console.log(`  - IF ${r.when.join(' + ')} THEN ${r.then}`));
