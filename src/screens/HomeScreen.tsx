@@ -83,7 +83,7 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], o
         </View>
 
         <View style={styles.greetBlock}>
-          <Text style={styles.hello}>Selamat pagi, Baby {babyDisplay}! 👶</Text>
+          <Text style={styles.hello}>Selamat pagi, Baby {babyDisplay}! ✨</Text>
           {parentDisplay ? <Text style={styles.parentName}>Orang tua: {parentDisplay}</Text> : null}
         </View>
 
