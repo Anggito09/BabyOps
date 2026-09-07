@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Animated, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { colors, gradients } from '../theme/tokens';
 
-export const PRIVACY_TEXT = `KEBIJAKAN PRIVASI & PERSETUJUAN DATA — BabyOps
-
-1. Data tersimpan lokal di HP Anda (AsyncStorage), tidak dikirim ke server BabyOps.
-2. BabyOps TIDAK memperjualbelikan, menyewakan, atau membagikan data pribadi Anda (nama, email, data bayi) ke pihak ketiga mana pun.
-3. Data riset (opsional, default MATI): hanya vektor fitur MFCC anonim + gejala + hasil diagnosa + umur bayi (bulan). TANPA nama, email, tanggal lahir, dan TANPA audio mentah. Sampel tersimpan di HP Anda dan hanya terkirim jika Anda menekan Export JSON lalu mengirimkannya sendiri.
-4. Anda bisa menarik persetujuan kapan saja via Profil → Riset & data anonim, serta menghapus sampel via tombol Hapus sampel.
-5. Hasil screening/prediksi adalah panduan awal, BUKAN diagnosis medis. Selalu konsultasikan ke tenaga kesehatan.`;
+const POLICY_SECTIONS: Array<{ title: string; body: string }> = [
+  { title: '1. Data Tersimpan Lokal', body: 'Semua data akun, profil bayi, dan riwayat screening tersimpan di HP/browser Anda (AsyncStorage). BabyOps tidak memiliki server penyimpanan data pengguna, sehingga data tidak otomatis terkirim ke mana pun.' },
+  { title: '2. Tidak Diperjualbelikan', body: 'BabyOps TIDAK memperjualbelikan, menyewakan, atau membagikan data pribadi Anda (nama orang tua, nama bayi, email, tanggal lahir) ke pihak ketiga mana pun, untuk tujuan apa pun.' },
+  { title: '3. Data Riset Anonim (Opsional)', body: 'Jika Anda mencentang persetujuan riset, app menyimpan paket anonim di HP Anda: vektor fitur suara MFCC (bukan rekaman audio), daftar gejala, hasil diagnosa, dan umur bayi dalam bulan. TANPA nama, email, tanggal lahir, dan TANPA audio mentah. Data hanya keluar dari HP jika Anda menekan Export lalu mengirimkannya sendiri.' },
+  { title: '4. Hak Anda', body: 'Anda dapat menarik persetujuan riset kapan saja, menghapus sampel yang tersimpan, dan menghapus akun beserta seluruh datanya dengan keluar + menghapus data aplikasi.' },
+  { title: '5. Bukan Diagnosis Medis', body: 'Hasil screening gejala dan prediksi tangisan adalah panduan awal dan edukasi, BUKAN diagnosis medis. Selalu konsultasikan kondisi bayi ke dokter, bidan, atau fasilitas kesehatan.' },
+  { title: '6. Keamanan Akun', body: 'Jaga kerahasiaan password Anda. Jangan gunakan password yang sama dengan layanan lain. BabyOps tidak akan pernah meminta password Anda melalui email atau pesan.' },
+  { title: '7. Kontak', body: 'Pertanyaan soal privasi dan data dapat disampaikan melalui menu bantuan di aplikasi atau email resmi BabyOps yang tertera di halaman profil.' },
+];
 
 interface Props {
   onRegister: (parentName: string, babyName: string, email: string, babyDob: string, password: string, researchConsent: boolean) => void;
@@ -40,6 +42,20 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeResearch, setAgreeResearch] = useState(false);
   const [showPolicy, setShowPolicy] = useState(false);
+  const [scrolledEnd, setScrolledEnd] = useState(false);
+  const pop = useRef(new Animated.Value(0.9)).current;
+  const fade = useRef(new Animated.Value(0)).current;
+
+  const openPolicy = () => {
+    setScrolledEnd(false);
+    setShowPolicy(true);
+    pop.setValue(0.9);
+    fade.setValue(0);
+    Animated.parallel([
+      Animated.spring(pop, { toValue: 1, damping: 14, stiffness: 180, useNativeDriver: true }),
+      Animated.timing(fade, { toValue: 1, duration: 200, useNativeDriver: true }),
+    ]).start();
+  };
 
   const handle = () => {
     const cleanEmail = email.trim().toLowerCase();
@@ -122,14 +138,15 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Pressable onPress={() => setAgreePrivacy(!agreePrivacy)} style={styles.checkRow}>
+          <View style={styles.checkRow}>
             <View style={[styles.checkbox, agreePrivacy && styles.checkboxOn]}>
               {agreePrivacy && <Ionicons name="checkmark" size={14} color={colors.white} />}
             </View>
             <Text style={styles.checkText}>
-              Saya membaca & menyetujui <Text style={styles.checkLink} onPress={() => setShowPolicy(true)}>Kebijakan Privasi & Aturan Pakai</Text>. BabyOps TIDAK memperjualbelikan data saya.
+              Saya membaca & menyetujui <Text style={styles.checkLink} onPress={openPolicy}>Kebijakan Privasi & Aturan Pakai</Text>. BabyOps TIDAK memperjualbelikan data saya.
+              {agreePrivacy ? ' ✓' : ''}
             </Text>
-          </Pressable>
+          </View>
 
           <Pressable onPress={() => setAgreeResearch(!agreeResearch)} style={styles.checkRow}>
             <View style={[styles.checkbox, agreeResearch && styles.checkboxOn]}>
@@ -153,26 +170,51 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
         </View>
       </ScrollView>
 
-      {showPolicy && (
-        <View style={styles.policyBackdrop}>
-          <View style={styles.policyCard}>
+      <Modal visible={showPolicy} transparent animationType="none" onRequestClose={() => setShowPolicy(false)}>
+        <Animated.View style={[styles.policyBackdrop, { opacity: fade }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowPolicy(false)} />
+          <Animated.View style={[styles.policyCard, { transform: [{ scale: pop }] }]}>
             <View style={styles.policyHead}>
-              <Text style={styles.policyTitle}>Kebijakan Privasi & Aturan Pakai</Text>
-              <Pressable onPress={() => setShowPolicy(false)} hitSlop={10}>
-                <Ionicons name="close" size={20} color="#7A8CA8" />
+              <View style={styles.policyIconWrap}>
+                <Ionicons name="shield-checkmark" size={20} color={colors.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.policyTitle}>Kebijakan Privasi & Aturan Pakai</Text>
+                <Text style={styles.policySub}>Scroll sampai bawah untuk menyetujui</Text>
+              </View>
+              <Pressable onPress={() => setShowPolicy(false)} hitSlop={10} style={styles.policyClose}>
+                <Ionicons name="close" size={18} color="#7A8CA8" />
               </Pressable>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.policyScroll}>
-              <Text style={styles.policyText}>{PRIVACY_TEXT}</Text>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.policyScroll}
+              contentContainerStyle={{ paddingBottom: 8 }}
+              onScroll={({ nativeEvent }) => {
+                const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+                if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 24) setScrolledEnd(true);
+              }}
+              scrollEventThrottle={100}
+            >
+              {POLICY_SECTIONS.map((s) => (
+                <View key={s.title} style={styles.policySection}>
+                  <Text style={styles.policySectionTitle}>{s.title}</Text>
+                  <Text style={styles.policyText}>{s.body}</Text>
+                </View>
+              ))}
+              <Text style={styles.policyEnd}>{scrolledEnd ? '✓ Anda sudah membaca seluruh aturan' : '↓ Scroll ke bawah untuk lanjut'}</Text>
             </ScrollView>
-            <Pressable onPress={() => { setShowPolicy(false); setAgreePrivacy(true); }} style={styles.primaryWrap}>
+            <Pressable
+              onPress={() => { if (!scrolledEnd) return; setShowPolicy(false); setAgreePrivacy(true); }}
+              style={[styles.primaryWrap, !scrolledEnd && { opacity: 0.45 }]}
+            >
               <LinearGradient colors={['#2FA0E5', '#0A5A8C']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.primary}>
-                <Text style={styles.primaryText}>Saya Setuju</Text>
+                <Text style={styles.primaryText}>{scrolledEnd ? 'Saya Setuju & Centang' : 'Scroll Dulu Ya'}</Text>
               </LinearGradient>
             </Pressable>
-          </View>
-        </View>
-      )}
+          </Animated.View>
+        </Animated.View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -236,12 +278,18 @@ const styles = StyleSheet.create({
   checkboxOn: { backgroundColor: '#2FA0E5', borderColor: '#2FA0E5' },
   checkText: { flex: 1, fontSize: 11, lineHeight: 16, color: '#40566E' },
   checkLink: { color: '#2FA0E5', fontWeight: '800' },
-  policyBackdrop: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(5,73,123,0.5)', justifyContent: 'flex-end' },
-  policyCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '80%' },
-  policyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  policyBackdrop: { flex: 1, backgroundColor: 'rgba(5,73,123,0.5)', justifyContent: 'center', padding: 20 },
+  policyCard: { backgroundColor: colors.white, borderRadius: 24, padding: 20, maxHeight: '82%', ...({ shadowColor: '#0A3A5A', shadowOpacity: 0.25, shadowRadius: 20, elevation: 10 } as any) },
+  policyHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  policyIconWrap: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#2FA0E5', alignItems: 'center', justifyContent: 'center' },
   policyTitle: { fontSize: 15, fontWeight: '900', color: '#1A2B4A' },
-  policyScroll: { maxHeight: 320, marginBottom: 12 },
+  policySub: { fontSize: 11, color: '#7A8CA8', marginTop: 1 },
+  policyClose: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#F0F3F5', alignItems: 'center', justifyContent: 'center' },
+  policyScroll: { maxHeight: 340, marginBottom: 12 },
+  policySection: { backgroundColor: '#F4F8FC', borderRadius: 14, padding: 12, marginBottom: 8 },
+  policySectionTitle: { fontSize: 12, fontWeight: '900', color: '#1A2B4A', marginBottom: 4 },
   policyText: { fontSize: 12, lineHeight: 19, color: '#40566E' },
+  policyEnd: { textAlign: 'center', fontSize: 11, fontWeight: '800', color: '#2FA0E5', marginTop: 6 },
   primaryWrap: { borderRadius: 24, overflow: 'hidden', marginTop: 8, shadowColor: '#0A5A8C', shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 },
   primary: { height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   primaryText: { color: colors.white, fontSize: 16, fontWeight: '800' },
