@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients, spacing } from '../theme/tokens';
 import { CalendarPicker } from '../components/CalendarPicker';
-import { clearResearch, findUserByEmail, getCurrentEmail, loadResearch, upsertUser } from '../storage/db';
 
 interface Props {
   user?: { name: string; email: string; babyDob?: string; babyName?: string; babyGender?: string; phone?: string; address?: string } | null;
@@ -15,7 +14,7 @@ interface Props {
   onSave?: (data: Partial<{ name: string; babyName: string; babyDob: string; babyGender: string; phone: string; address: string }>) => void;
 }
 
-type Mode = null | 'parent' | 'baby' | 'reminder' | 'privacy' | 'research';
+type Mode = null | 'parent' | 'baby' | 'reminder' | 'privacy';
 
 export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout, onLogin, onSave }: Props) {
   const isNewUser = historyCount === 0;
@@ -23,68 +22,6 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
   const [form, setForm] = useState({ name: user?.name ?? '', babyName: user?.babyName ?? '', babyDob: user?.babyDob ?? '', phone: user?.phone ?? '', address: user?.address ?? '', babyGender: (user?.babyGender as string) ?? 'L' });
   const [showCal, setShowCal] = useState(false);
   const [savedToast, setSavedToast] = useState('');
-  const [consent, setConsent] = useState(false);
-  const [sampleCount, setSampleCount] = useState(0);
-
-  useEffect(() => {
-    (async () => {
-      const email = await getCurrentEmail();
-      const dbUser = email ? await findUserByEmail(email) : null;
-      setConsent(!!dbUser?.researchConsent);
-      setSampleCount((await loadResearch()).length);
-    })();
-  }, [user?.email, mode]);
-
-  const toggleConsent = async (v: boolean) => {
-    setConsent(v);
-    const email = await getCurrentEmail();
-    if (!email) return;
-    const dbUser = await findUserByEmail(email);
-    if (!dbUser) return;
-    await upsertUser({ ...dbUser, researchConsent: v, researchConsentAt: v ? new Date().toISOString() : undefined });
-    setSavedToast(v ? 'Terima kasih ikut riset 🙏' : 'Keikutsertaan dimatikan');
-    setTimeout(() => setSavedToast(''), 1800);
-  };
-
-  const exportResearch = async () => {
-    const samples = await loadResearch();
-    const payload = JSON.stringify({ exportedAt: new Date().toISOString(), count: samples.length, samples }, null, 2);
-    if (Platform.OS === 'web') {
-      const nav = (globalThis as any).navigator;
-      try {
-        if (nav?.clipboard) {
-          await nav.clipboard.writeText(payload);
-          setSavedToast(`Disalin ${samples.length} sampel — tempel ke file/email`);
-        } else {
-          const blob = new Blob([payload], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'babyops-research.json';
-          a.click();
-          URL.revokeObjectURL(url);
-          setSavedToast(`Diunduh ${samples.length} sampel`);
-        }
-      } catch {
-        setSavedToast('Gagal export, coba lagi');
-      }
-      setTimeout(() => setSavedToast(''), 2200);
-      return;
-    }
-    try {
-      await Share.share({ message: payload, title: 'BabyOps Research Export' });
-    } catch {
-      setSavedToast('Gagal export, coba lagi');
-      setTimeout(() => setSavedToast(''), 1800);
-    }
-  };
-
-  const deleteResearch = async () => {
-    await clearResearch();
-    setSampleCount(0);
-    setSavedToast('Sampel riset dihapus');
-    setTimeout(() => setSavedToast(''), 1800);
-  };
 
   // animation
   const fade = useRef(new Animated.Value(0)).current;
@@ -179,7 +116,6 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
               { icon: 'happy', label: 'Profil bayi', hint: user?.babyName ? user.babyName + ' • ' + babyAge + ' bln' : 'Atur nama & TTL', mode: 'baby' as Mode, img: require('../../assets/onboarding-baby-bottle.png') },
               { icon: 'notifications', label: 'Pengingat', hint: 'Imunisasi', mode: 'reminder' as Mode, img: require('../../assets/onboarding-baby-cry.png') },
               { icon: 'shield-checkmark', label: 'Privasi & keamanan', hint: 'Lokal', mode: 'privacy' as Mode, img: require('../../assets/onboarding-mother.png') },
-              { icon: 'flask', label: 'Riset & data anonim', hint: consent ? `${sampleCount} sampel • Aktif` : 'Ikut latih model', mode: 'research' as Mode, img: require('../../assets/baby-record.png') },
             ].map((it) => (
               <Pressable key={it.label} style={({ pressed }) => [styles.row, pressed && { opacity: 0.6, transform: [{ scale: 0.98 }] }]} onPress={() => open(it.mode)}>
                 <View style={styles.rowIconWrap}>
@@ -223,7 +159,7 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
                   {mode === 'reminder' && <Ionicons name="notifications" size={28} color={colors.primary} />}
                   {mode === 'privacy' && <Ionicons name="shield-checkmark" size={28} color={colors.primary} />}
                 </View>
-                <Text style={styles.modalTitle}>{mode === 'parent' ? 'Data Orang Tua' : mode === 'baby' ? 'Profil Bayi' : mode === 'reminder' ? 'Pengingat' : mode === 'research' ? 'Riset & Data Anonim' : 'Privasi & Keamanan'}</Text>
+                <Text style={styles.modalTitle}>{mode === 'parent' ? 'Data Orang Tua' : mode === 'baby' ? 'Profil Bayi' : mode === 'reminder' ? 'Pengingat' : 'Privasi & Keamanan'}</Text>
               </View>
               <Pressable onPress={() => setMode(null)} hitSlop={8} style={styles.closeBtn}>
                 <Ionicons name="close" size={20} color={colors.muted} />
@@ -322,34 +258,6 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
                   <Ionicons name="lock-closed" size={14} color={colors.success} />
                   <Text style={styles.privacyBadgeText}>Terenkripsi lokal</Text>
                 </View>
-              </View>
-            )}
-
-            {mode === 'research' && (
-              <View style={styles.form}>
-                <View style={styles.reminderCard}>
-                  <Ionicons name="flask" size={28} color={colors.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.reminderTitle}>Bantu latih model lebih baik</Text>
-                    <Text style={styles.reminderDesc}>Default MATI. Kalau dinyalakan, app menyimpan paket ANONIM di HP ini saja: vektor MFCC tangisan (bukan audio), gejala + hasil diagnosa, umur bayi (bulan). TANPA nama, email, tanggal lahir.</Text>
-                  </View>
-                </View>
-                <Pressable onPress={() => toggleConsent(!consent)} style={[styles.genderPill, consent && styles.genderOn, { height: 48 }]}>
-                  <Ionicons name={consent ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={consent ? colors.white : colors.primary} />
-                  <Text style={[styles.genderText, consent && styles.genderTextOn]}>{consent ? 'Ikut riset: AKTIF' : 'Ikut riset: MATI'}</Text>
-                </Pressable>
-                <Text style={styles.hint}>Tersimpan: {sampleCount} sampel anonim di HP ini.</Text>
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <Pressable onPress={exportResearch} style={[styles.saveWrap, { flex: 1 }]}>
-                    <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.saveBtn}>
-                      <Text style={styles.saveText}>Export JSON</Text>
-                    </LinearGradient>
-                  </Pressable>
-                  <Pressable onPress={deleteResearch} style={[styles.cancelBtn, { flex: 1 }]}>
-                    <Text style={styles.cancelText}>Hapus sampel</Text>
-                  </Pressable>
-                </View>
-                <Text style={styles.hint}>Kirim file JSON ke developer untuk dilatih jadi model baru. Bisa hapus kapan saja.</Text>
               </View>
             )}
 

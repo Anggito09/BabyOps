@@ -142,7 +142,7 @@ export default function App() {
     setUser({ name: updated.name, email: updated.email, babyDob: updated.babyDob, babyName: (updated as any).babyName, babyGender: (updated as any).babyGender, phone: (updated as any).phone, address: (updated as any).address });
   };
 
-  const handleRegister = async (parentName: string, babyName: string, email: string, babyDob: string, password: string) => {
+  const handleRegister = async (parentName: string, babyName: string, email: string, babyDob: string, password: string, researchConsent: boolean) => {
     const clean = email.trim().toLowerCase();
     const existing = await DB.findUserByEmail(clean);
     if (existing) {
@@ -159,6 +159,8 @@ export default function App() {
       password,
       provider: 'email',
       createdAt: new Date().toISOString(),
+      researchConsent,
+      researchConsentAt: researchConsent ? new Date().toISOString() : undefined,
     };
     await DB.upsertUser(newUser);
     await DB.setCurrentEmail(clean);

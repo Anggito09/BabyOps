@@ -5,8 +5,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { colors, gradients } from '../theme/tokens';
 
+export const PRIVACY_TEXT = `KEBIJAKAN PRIVASI & PERSETUJUAN DATA — BabyOps
+
+1. Data tersimpan lokal di HP Anda (AsyncStorage), tidak dikirim ke server BabyOps.
+2. BabyOps TIDAK memperjualbelikan, menyewakan, atau membagikan data pribadi Anda (nama, email, data bayi) ke pihak ketiga mana pun.
+3. Data riset (opsional, default MATI): hanya vektor fitur MFCC anonim + gejala + hasil diagnosa + umur bayi (bulan). TANPA nama, email, tanggal lahir, dan TANPA audio mentah. Sampel tersimpan di HP Anda dan hanya terkirim jika Anda menekan Export JSON lalu mengirimkannya sendiri.
+4. Anda bisa menarik persetujuan kapan saja via Profil → Riset & data anonim, serta menghapus sampel via tombol Hapus sampel.
+5. Hasil screening/prediksi adalah panduan awal, BUKAN diagnosis medis. Selalu konsultasikan ke tenaga kesehatan.`;
+
 interface Props {
-  onRegister: (parentName: string, babyName: string, email: string, babyDob: string, password: string) => void;
+  onRegister: (parentName: string, babyName: string, email: string, babyDob: string, password: string, researchConsent: boolean) => void;
   onGoLogin: () => void;
 }
 
@@ -29,6 +37,9 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeResearch, setAgreeResearch] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
 
   const handle = () => {
     const cleanEmail = email.trim().toLowerCase();
@@ -44,8 +55,12 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
       setError('Konfirmasi password tidak cocok.');
       return;
     }
+    if (!agreePrivacy) {
+      setError('Centang persetujuan Kebijakan Privasi & Aturan Pakai dulu.');
+      return;
+    }
     setError('');
-    onRegister(parentName.trim(), babyName.trim(), cleanEmail, formatDate(babyDate), password);
+    onRegister(parentName.trim(), babyName.trim(), cleanEmail, formatDate(babyDate), password, agreeResearch);
   };
 
   return (
@@ -107,6 +122,24 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
+          <Pressable onPress={() => setAgreePrivacy(!agreePrivacy)} style={styles.checkRow}>
+            <View style={[styles.checkbox, agreePrivacy && styles.checkboxOn]}>
+              {agreePrivacy && <Ionicons name="checkmark" size={14} color={colors.white} />}
+            </View>
+            <Text style={styles.checkText}>
+              Saya membaca & menyetujui <Text style={styles.checkLink} onPress={() => setShowPolicy(true)}>Kebijakan Privasi & Aturan Pakai</Text>. BabyOps TIDAK memperjualbelikan data saya.
+            </Text>
+          </Pressable>
+
+          <Pressable onPress={() => setAgreeResearch(!agreeResearch)} style={styles.checkRow}>
+            <View style={[styles.checkbox, agreeResearch && styles.checkboxOn]}>
+              {agreeResearch && <Ionicons name="checkmark" size={14} color={colors.white} />}
+            </View>
+            <Text style={styles.checkText}>
+              Saya setuju data ANONIM (fitur suara + gejala, tanpa nama/audio) dipakai untuk melatih model lebih baik. (Opsional)
+            </Text>
+          </Pressable>
+
           <Pressable onPress={handle} style={styles.primaryWrap}>
             <LinearGradient colors={['#2FA0E5', '#0A5A8C']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.primary}>
               <Text style={styles.primaryText}>Sign Up</Text>
@@ -119,6 +152,27 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
           </View>
         </View>
       </ScrollView>
+
+      {showPolicy && (
+        <View style={styles.policyBackdrop}>
+          <View style={styles.policyCard}>
+            <View style={styles.policyHead}>
+              <Text style={styles.policyTitle}>Kebijakan Privasi & Aturan Pakai</Text>
+              <Pressable onPress={() => setShowPolicy(false)} hitSlop={10}>
+                <Ionicons name="close" size={20} color="#7A8CA8" />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.policyScroll}>
+              <Text style={styles.policyText}>{PRIVACY_TEXT}</Text>
+            </ScrollView>
+            <Pressable onPress={() => { setShowPolicy(false); setAgreePrivacy(true); }} style={styles.primaryWrap}>
+              <LinearGradient colors={['#2FA0E5', '#0A5A8C']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.primary}>
+                <Text style={styles.primaryText}>Saya Setuju</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+        </View>
+      )}
     </LinearGradient>
   );
 }
@@ -177,6 +231,17 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, color: colors.ink, fontSize: 13, borderWidth: 0, outlineWidth: 0, outlineStyle: 'none', boxShadow: 'none' } as any,
   error: { color: colors.danger, fontSize: 12 },
+  checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 6 },
+  checkbox: { width: 22, height: 22, borderRadius: 7, borderWidth: 2, borderColor: '#B9C9D8', alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  checkboxOn: { backgroundColor: '#2FA0E5', borderColor: '#2FA0E5' },
+  checkText: { flex: 1, fontSize: 11, lineHeight: 16, color: '#40566E' },
+  checkLink: { color: '#2FA0E5', fontWeight: '800' },
+  policyBackdrop: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(5,73,123,0.5)', justifyContent: 'flex-end' },
+  policyCard: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '80%' },
+  policyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  policyTitle: { fontSize: 15, fontWeight: '900', color: '#1A2B4A' },
+  policyScroll: { maxHeight: 320, marginBottom: 12 },
+  policyText: { fontSize: 12, lineHeight: 19, color: '#40566E' },
   primaryWrap: { borderRadius: 24, overflow: 'hidden', marginTop: 8, shadowColor: '#0A5A8C', shadowOpacity: 0.25, shadowRadius: 10, elevation: 4 },
   primary: { height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   primaryText: { color: colors.white, fontSize: 16, fontWeight: '800' },
