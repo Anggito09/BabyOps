@@ -3,7 +3,7 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, T
 import { Ionicons } from '@expo/vector-icons';
 import { GradientHeader } from '../components/GradientHeader';
 import { articles, Article } from '../data/articles';
-import { colors, font, radius, shadow, spacing } from '../theme/tokens';
+import { colors, family, font, radius, shadow, spacing } from '../theme/tokens';
 
 const thumbColors = ['#7A5CF0', '#2B9BEC', '#E85D5D', '#34C77B', '#F5A623', '#05497B'];
 
@@ -106,7 +106,7 @@ export function EducationScreen() {
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <GradientHeader title="Edukasi" subtitle="Artikel kesehatan & pengasuhan bayi — real Kemenkes/IDAI/WHO" />
+        <GradientHeader title="Edukasi" subtitle="Artikel kesehatan bayi · Kemenkes · IDAI · WHO" />
         <View style={styles.body}>
           <View style={styles.search}>
             <View style={styles.searchIconWrap}>
@@ -127,13 +127,13 @@ export function EducationScreen() {
               <Ionicons name="options-outline" size={18} color={colors.muted} />
             )}
           </View>
-          <View style={styles.filterRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} style={styles.filterScroll}>
             {['Semua', 'ASI & MPASI', 'Imunisasi', 'Tumbuh Kembang'].map((f) => (
               <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterPill, filter === f && styles.filterPillActive]}>
                 <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
           {filtered.length === 0 ? (
             <View style={styles.emptySearch}>
               <Ionicons name="search-outline" size={28} color={colors.muted} />
@@ -156,7 +156,7 @@ export function EducationScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.skySoft },
   scroll: { paddingBottom: 120 },
-  body: { paddingHorizontal: spacing.lg, marginTop: -spacing.xl },
+  body: { paddingHorizontal: spacing.lg, marginTop: -18 },
   search: {
     backgroundColor: colors.white,
     height: 50,
@@ -184,7 +184,8 @@ const styles = StyleSheet.create({
   emptyText: { color: colors.muted, fontSize: 12, textAlign: 'center', paddingHorizontal: 16 },
   emptyBtn: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
   emptyBtnText: { color: colors.white, fontSize: 12, fontWeight: '800' },
-  filterRow: { flexDirection: 'row', gap: 8, marginBottom: spacing.md, marginTop: 4 },
+  filterScroll: { marginBottom: spacing.md, marginTop: 4, marginHorizontal: -spacing.lg },
+  filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.lg, paddingRight: spacing.xl },
   filterPill: {
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
     borderColor: '#E6EDF3',
   },
   filterPillActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterText: { fontSize: 11, fontWeight: '700', color: colors.muted },
+  filterText: { fontSize: 11, fontWeight: '700', color: colors.muted, fontFamily: family.semiBold },
   filterTextActive: { color: colors.white },
   card: {
     flexDirection: 'row',
@@ -240,8 +241,8 @@ const styles = StyleSheet.create({
   },
   thumbEmoji: { fontSize: 30, color: colors.white, textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   catPill: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, marginBottom: 4 },
-  category: { fontSize: 10, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase' },
-  title: { color: colors.textDark, fontSize: 14, fontWeight: '900', lineHeight: 19, letterSpacing: -0.2 },
+  category: { fontSize: 10, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase', fontFamily: family.extraBold },
+  title: { color: colors.textDark, fontSize: 14, fontWeight: '900', lineHeight: 19, letterSpacing: -0.2, fontFamily: family.extraBold },
   excerpt: { color: colors.textMuted, fontSize: 11, lineHeight: 16, marginTop: 3 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   meta: { color: colors.textSoft, fontSize: 11, fontWeight: '600' },
@@ -273,6 +274,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     lineHeight: 26,
     letterSpacing: -0.4,
+    fontFamily: family.extraBold,
   },
   detailMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
   detailMeta: { color: colors.textSoft, fontSize: 12, fontWeight: '600' },

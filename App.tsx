@@ -15,6 +15,7 @@ import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
 import { BottomNav, TabKey } from './src/components/BottomNav';
+import { useFonts, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans';
 import { colors } from './src/theme/tokens';
 import { CryPrediction } from './src/model/cryClassifier';
 import * as DB from './src/storage/db';
@@ -61,6 +62,13 @@ export default function App() {
   const [history, setHistory] = useState<DiagnosisHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState('');
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
 
   // Web: hilangkan kotak outline/focus hitam-biru saat klik (Pressable/Touchable)
   useEffect(() => {
@@ -134,7 +142,7 @@ export default function App() {
     setUser({ name: updated.name, email: updated.email, babyDob: updated.babyDob, babyName: (updated as any).babyName, babyGender: (updated as any).babyGender, phone: (updated as any).phone, address: (updated as any).address });
   };
 
-  const handleRegister = async (name: string, email: string, babyDob: string, password: string) => {
+  const handleRegister = async (parentName: string, babyName: string, email: string, babyDob: string, password: string) => {
     const clean = email.trim().toLowerCase();
     const existing = await DB.findUserByEmail(clean);
     if (existing) {
@@ -144,18 +152,19 @@ export default function App() {
     }
     const newUser: import('./src/storage/db').DbUser = {
       id: String(Date.now()),
-      name,
+      name: parentName,
       email: clean,
       babyDob,
+      babyName,
       password,
       provider: 'email',
       createdAt: new Date().toISOString(),
     };
     await DB.upsertUser(newUser);
     await DB.setCurrentEmail(clean);
-    setUser({ name, email: clean, babyDob });
+    setUser({ name: parentName, email: clean, babyDob, babyName });
     setHistory([]);
-    await emailService.sendWelcome(clean, name, 'email');
+    await emailService.sendWelcome(clean, parentName, 'email');
     goMain('home');
   };
 
@@ -184,7 +193,7 @@ export default function App() {
     return <View style={styles.webOuter}><View style={styles.webPhone}><View style={styles.webPhoneInner}>{content}</View></View></View>;
   };
 
-  if (route.name === 'splash') {
+  if (route.name === 'splash' || !fontsLoaded) {
     return wrapWeb(
       <ScreenView style={styles.safe}>
         <SplashScreen onFinish={() => setSplashDone(true)} />

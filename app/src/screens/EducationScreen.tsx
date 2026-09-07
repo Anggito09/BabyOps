@@ -3,7 +3,7 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TouchableOpa
 import { Ionicons } from '@expo/vector-icons';
 import { GradientHeader } from '../components/GradientHeader';
 import { articles, Article } from '../data/articles';
-import { colors, font, radius, shadow, spacing } from '../theme/tokens';
+import { colors, family, font, radius, shadow, spacing } from '../theme/tokens';
 
 const thumbColors = ['#7A5CF0', '#2B9BEC', '#E85D5D', '#34C77B', '#F5A623', '#05497B'];
 
@@ -97,7 +97,7 @@ export function EducationScreen() {
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <GradientHeader title="Edukasi" subtitle="Artikel kesehatan & pengasuhan bayi — real Kemenkes/IDAI/WHO" />
+        <GradientHeader title="Edukasi" subtitle="Artikel kesehatan bayi · Kemenkes · IDAI · WHO" />
         <View style={styles.body}>
           <View style={styles.search}>
             <View style={styles.searchIconWrap}>
@@ -106,13 +106,13 @@ export function EducationScreen() {
             <Text style={styles.searchText}>Cari artikel kesehatan bayi</Text>
             <Ionicons name="options-outline" size={18} color={colors.muted} />
           </View>
-          <View style={styles.filterRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} style={styles.filterScroll}>
             {['Semua', 'ASI & MPASI', 'Imunisasi', 'Tumbuh Kembang'].map((f, idx) => (
               <View key={f} style={[styles.filterPill, idx === 0 && styles.filterPillActive]}>
                 <Text style={[styles.filterText, idx === 0 && styles.filterTextActive]}>{f}</Text>
               </View>
             ))}
-          </View>
+          </ScrollView>
           {articles.map((a, i) => (
             <AnimatedCard key={a.id} article={a} index={i} color={thumbColors[i % thumbColors.length]} onPress={() => setOpen(a)} />
           ))}
@@ -125,7 +125,7 @@ export function EducationScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.skySoft },
   scroll: { paddingBottom: 120 },
-  body: { paddingHorizontal: spacing.lg, marginTop: -spacing.xl },
+  body: { paddingHorizontal: spacing.lg, marginTop: -18 },
   search: {
     backgroundColor: colors.white,
     height: 50,
@@ -148,7 +148,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchText: { flex: 1, color: colors.muted, fontSize: 12, fontWeight: '500' },
-  filterRow: { flexDirection: 'row', gap: 8, marginBottom: spacing.md, marginTop: 4 },
+  filterScroll: { marginBottom: spacing.md, marginTop: 4, marginHorizontal: -spacing.lg },
+  filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.lg, paddingRight: spacing.xl },
   filterPill: {
     paddingHorizontal: 14,
     paddingVertical: 7,

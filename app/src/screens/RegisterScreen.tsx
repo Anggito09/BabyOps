@@ -6,7 +6,7 @@ import { CalendarPicker } from '../components/CalendarPicker';
 import { colors, gradients } from '../theme/tokens';
 
 interface Props {
-  onRegister: (name: string, email: string, babyDob: string, password: string) => void;
+  onRegister: (parentName: string, babyName: string, email: string, babyDob: string, password: string) => void;
   onGoLogin: () => void;
 }
 
@@ -18,7 +18,8 @@ function formatDate(d: Date) {
 }
 
 export function RegisterScreen({ onRegister, onGoLogin }: Props) {
-  const [name, setName] = useState('');
+  const [parentName, setParentName] = useState('');
+  const [babyName, setBabyName] = useState('');
   const [email, setEmail] = useState('');
   const [babyDate, setBabyDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -30,8 +31,9 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
   const [error, setError] = useState('');
 
   const handle = () => {
-    if (!name.trim() || !email.includes('@') || !babyDate || password.length < 6) {
-      setError('Lengkapi nama, email valid, tanggal lahir bayi & password ≥6 karakter.');
+    const cleanEmail = email.trim().toLowerCase();
+    if (!parentName.trim() || !babyName.trim() || !cleanEmail.includes('@') || !babyDate || password.length < 6) {
+      setError('Lengkapi nama orang tua, nama bayi, email valid, tanggal lahir bayi & password ≥6 karakter.');
       return;
     }
     if (babyDate > new Date()) {
@@ -43,7 +45,7 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
       return;
     }
     setError('');
-    onRegister(name.trim(), email, formatDate(babyDate), password);
+    onRegister(parentName.trim(), babyName.trim(), cleanEmail, formatDate(babyDate), password);
   };
 
   return (
@@ -56,10 +58,16 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
         <Text style={styles.title}>SIGN UP</Text>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Nama</Text>
+          <Text style={styles.label}>Nama Orang Tua</Text>
           <View style={styles.pill}>
             <View style={styles.pillIcon}><Ionicons name="person" size={14} color="#7A8CA8" /></View>
-            <TextInput placeholder="masukkan nama" placeholderTextColor="#8FA0B8" value={name} onChangeText={setName} style={styles.input} />
+            <TextInput placeholder="masukkan nama orang tua" placeholderTextColor="#8FA0B8" value={parentName} onChangeText={setParentName} style={styles.input} />
+          </View>
+
+          <Text style={styles.label}>Nama Bayi</Text>
+          <View style={styles.pill}>
+            <View style={styles.pillIcon}><Ionicons name="happy" size={14} color="#7A8CA8" /></View>
+            <TextInput placeholder="masukkan nama bayi" placeholderTextColor="#8FA0B8" value={babyName} onChangeText={setBabyName} style={styles.input} />
           </View>
 
           <Text style={styles.label}>Email</Text>

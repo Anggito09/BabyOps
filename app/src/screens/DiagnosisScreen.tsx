@@ -1,11 +1,23 @@
-import React, { useMemo, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GradientHeader } from '../components/GradientHeader';
 import { GradientButton } from '../components/GradientButton';
 import { conditions, symptomCategories, SymptomCategory } from '../data/symptoms';
 import { runForwardChaining } from '../model/forwardChaining';
-import { colors, font, radius, shadow, spacing } from '../theme/tokens';
+import { colors, family, font, radius, shadow, spacing } from '../theme/tokens';
+
+function AnimatedCat({ index, children }: { index: number; children: React.ReactNode }) {
+  const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(18)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 400, delay: index * 60, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(slide, { toValue: 0, duration: 400, delay: index * 60, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }], width: '47.5%', flexGrow: 1 }}>{children}</Animated.View>;
+}
 
 interface Props {
   onSaveHistory?: (entry: {
@@ -133,21 +145,23 @@ export function DiagnosisScreen({ onSaveHistory }: Props) {
           <Text style={styles.hint}>Pilih kategori, lalu centang gejala yang terlihat pada bayi Anda.</Text>
 
           <View style={styles.grid}>
-            {symptomCategories.map((cat) => {
+            {symptomCategories.map((cat, i) => {
               const count = cat.symptoms.filter((s) => selected.includes(s.id)).length;
               return (
-                <TouchableOpacity key={cat.id} style={styles.catCard} onPress={() => setActiveCategory(cat)} activeOpacity={0.85}>
-                  <View style={[styles.catIcon, { backgroundColor: cat.color + '14' }]}>
-                    <Text style={styles.catEmoji}>{cat.emoji}</Text>
-                    {count > 0 && (
-                      <View style={[styles.catCount, { backgroundColor: cat.color }]}>
-                        <Text style={styles.catCountText}>{count}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.catName}>{cat.name}</Text>
-                  <Text style={styles.catCountLabel}>{cat.symptoms.length} gejala</Text>
-                </TouchableOpacity>
+                <AnimatedCat key={cat.id} index={i}>
+                  <TouchableOpacity style={styles.catCard} onPress={() => setActiveCategory(cat)} activeOpacity={0.85}>
+                    <View style={[styles.catIcon, { backgroundColor: cat.color + '14' }]}>
+                      <Text style={styles.catEmoji}>{cat.emoji}</Text>
+                      {count > 0 && (
+                        <View style={[styles.catCount, { backgroundColor: cat.color }]}>
+                          <Text style={styles.catCountText}>{count}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.catName}>{cat.name}</Text>
+                    <Text style={styles.catCountLabel}>{cat.symptoms.length} gejala</Text>
+                  </TouchableOpacity>
+                </AnimatedCat>
               );
             })}
           </View>
@@ -197,7 +211,7 @@ export function DiagnosisScreen({ onSaveHistory }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.skySoft },
   scroll: { paddingBottom: 140 },
-  body: { paddingHorizontal: spacing.lg, marginTop: -spacing.xl },
+  body: { paddingHorizontal: spacing.lg, marginTop: -18 },
   resetPill: {
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -225,6 +239,7 @@ const styles = StyleSheet.create({
     fontSize: font.small,
     lineHeight: 20,
     marginTop: spacing.lg,
+    fontFamily: family.medium,
   },
   grid: {
     flexDirection: 'row',
@@ -233,8 +248,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   catCard: {
-    width: '47.5%',
-    flexGrow: 1,
+    width: '100%',
     backgroundColor: colors.white,
     borderRadius: radius.lg,
     padding: spacing.lg,
@@ -263,7 +277,7 @@ const styles = StyleSheet.create({
     borderColor: colors.white,
   },
   catCountText: { color: colors.white, fontSize: 10, fontWeight: '900' },
-  catName: { color: colors.textDark, fontSize: font.body, fontWeight: '800', marginTop: spacing.md },
+  catName: { color: colors.textDark, fontSize: font.body, fontWeight: '800', marginTop: spacing.md, fontFamily: family.extraBold },
   catCountLabel: { color: colors.textSoft, fontSize: font.tiny, marginTop: 2 },
   cta: { marginTop: spacing.xl },
   modalBackdrop: {

@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, font, radius, shadow, spacing } from '../theme/tokens';
+import { colors, family, font, radius, shadow, spacing } from '../theme/tokens';
 
 interface Props {
   title: string;
@@ -43,7 +43,7 @@ export function GradientHeader({ title, subtitle, onBack, right, children, style
 const styles = StyleSheet.create({
   header: {
     paddingTop: 54,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + 18,
     paddingHorizontal: spacing.lg,
     borderBottomLeftRadius: radius.xl,
     borderBottomRightRadius: radius.xl,
@@ -68,10 +68,14 @@ const styles = StyleSheet.create({
     fontSize: font.heading,
     fontWeight: '800',
     letterSpacing: -0.3,
+    fontFamily: family.extraBold,
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.85)',
+    color: 'rgba(255,255,255,0.9)',
     fontSize: font.small,
-    marginTop: 2,
+    lineHeight: 18,
+    marginTop: 4,
+    paddingRight: spacing.xl,
+    fontFamily: family.medium,
   },
 });
