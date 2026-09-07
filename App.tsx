@@ -294,7 +294,7 @@ export default function App() {
   const babyAge = getAgeMonths(user?.babyDob);
   return wrapWeb(
     <ScreenView style={styles.safe}>
-      {route.tab === 'home' && <HomeScreen userName={user?.name} babyAge={babyAge} history={history} onNavigate={(tab) => goMain(tab)} onRecord={() => setRoute({ name: 'record' })} />}
+      {route.tab === 'home' && <HomeScreen userName={user?.name} babyName={user?.babyName} babyAge={babyAge} history={history} onNavigate={(tab) => goMain(tab)} onRecord={() => setRoute({ name: 'record' })} />}
       {route.tab === 'diagnosis' && <DiagnosisScreen onSaveHistory={addHistory} />}
       {route.tab === 'education' && <EducationScreen />}
       {route.tab === 'profile' && <ProfileScreen user={user} babyAge={babyAge} historyCount={history.length} onLogout={handleLogout} onLogin={() => setRoute({ name: 'login' })} onSave={handleSaveProfile} />}

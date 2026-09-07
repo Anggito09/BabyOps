@@ -10,6 +10,7 @@ import { DiagnosisHistoryEntry } from '../../App';
 
 interface Props {
   userName?: string;
+  babyName?: string;
   babyAge?: string;
   history?: DiagnosisHistoryEntry[];
   onNavigate: (tab: TabKey) => void;
@@ -28,8 +29,9 @@ function FadeInRow({ index = 0, children }: { index?: number; children: React.Re
   return <Animated.View style={{ opacity, transform: [{ translateY: translate }] }}>{children}</Animated.View>;
 }
 
-export function HomeScreen({ userName, babyAge = '03', history = [], onNavigate, onRecord }: Props) {
-  const displayName = userName ? userName.charAt(0).toUpperCase() + userName.slice(1) : 'Anggito Karta Wijaya';
+export function HomeScreen({ userName, babyName, babyAge = '03', history = [], onNavigate, onRecord }: Props) {
+  const rawName = babyName?.trim() || userName?.trim() || '';
+  const displayName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : 'Si Kecil';
   const [selectedHistory, setSelectedHistory] = useState<DiagnosisHistoryEntry | null>(null);
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(60)).current;
