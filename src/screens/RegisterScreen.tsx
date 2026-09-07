@@ -40,7 +40,6 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [agreePrivacy, setAgreePrivacy] = useState(false);
-  const [agreeResearch, setAgreeResearch] = useState(false);
   const [showPolicy, setShowPolicy] = useState(false);
   const [scrolledEnd, setScrolledEnd] = useState(false);
   const pop = useRef(new Animated.Value(0.9)).current;
@@ -76,7 +75,7 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
       return;
     }
     setError('');
-    onRegister(parentName.trim(), babyName.trim(), cleanEmail, formatDate(babyDate), password, agreeResearch);
+    onRegister(parentName.trim(), babyName.trim(), cleanEmail, formatDate(babyDate), password, true);
   };
 
   return (
@@ -143,19 +142,10 @@ export function RegisterScreen({ onRegister, onGoLogin }: Props) {
               {agreePrivacy && <Ionicons name="checkmark" size={14} color={colors.white} />}
             </View>
             <Text style={styles.checkText}>
-              Saya membaca & menyetujui <Text style={styles.checkLink} onPress={openPolicy}>Kebijakan Privasi & Aturan Pakai</Text>. BabyOps TIDAK memperjualbelikan data saya.
-              {agreePrivacy ? ' ✓' : ''}
+              Saya membaca & menyetujui <Text style={styles.checkLink} onPress={openPolicy}>Kebijakan Privasi & Aturan Pakai</Text>
+              <Text style={styles.checkHint}> (ketuk teks biru untuk membaca){agreePrivacy ? ' ✓' : ''}</Text>
             </Text>
           </View>
-
-          <Pressable onPress={() => setAgreeResearch(!agreeResearch)} style={styles.checkRow}>
-            <View style={[styles.checkbox, agreeResearch && styles.checkboxOn]}>
-              {agreeResearch && <Ionicons name="checkmark" size={14} color={colors.white} />}
-            </View>
-            <Text style={styles.checkText}>
-              Saya setuju data ANONIM (fitur suara + gejala, tanpa nama/audio) dipakai untuk melatih model lebih baik. (Opsional)
-            </Text>
-          </Pressable>
 
           <Pressable onPress={handle} style={styles.primaryWrap}>
             <LinearGradient colors={['#2FA0E5', '#0A5A8C']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.primary}>
@@ -277,7 +267,8 @@ const styles = StyleSheet.create({
   checkbox: { width: 22, height: 22, borderRadius: 7, borderWidth: 2, borderColor: '#B9C9D8', alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   checkboxOn: { backgroundColor: '#2FA0E5', borderColor: '#2FA0E5' },
   checkText: { flex: 1, fontSize: 11, lineHeight: 16, color: '#40566E' },
-  checkLink: { color: '#2FA0E5', fontWeight: '800' },
+  checkLink: { color: '#2FA0E5', fontWeight: '800', textDecorationLine: 'underline' },
+  checkHint: { color: '#7A8CA8', fontSize: 10 },
   policyBackdrop: { flex: 1, backgroundColor: 'rgba(5,73,123,0.5)', justifyContent: 'center', padding: 20 },
   policyCard: { backgroundColor: colors.white, borderRadius: 24, padding: 20, maxHeight: '82%', ...({ shadowColor: '#0A3A5A', shadowOpacity: 0.25, shadowRadius: 20, elevation: 10 } as any) },
   policyHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
