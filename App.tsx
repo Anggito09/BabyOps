@@ -186,6 +186,21 @@ export default function App() {
     const next = [newEntry, ...history].slice(0, 10);
     setHistory(next);
     if (user?.email) await DB.saveHistory(user.email, next);
+    // Riset opt-in: simpan gejala + hasil diagnosa anonim (TANPA nama/email)
+    try {
+      const dbUser = user?.email ? await DB.findUserByEmail(user.email) : null;
+      if (dbUser?.researchConsent) {
+        await DB.addResearch({
+          type: 'diagnosis',
+          appVersion: '1.0.0',
+          symptomIds: entry.symptomIds ?? [],
+          condition: entry.conditionName,
+          babyAgeMonths: parseInt(getAgeMonths(dbUser.babyDob), 10) || 0,
+        });
+      }
+    } catch (e) {
+      console.warn('[BabyOps] Gagal simpan sampel riset diagnosa:', e);
+    }
   };
 
   const wrapWeb = (content: React.ReactNode) => {

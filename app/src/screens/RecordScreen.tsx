@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, useAudioRecorder, AudioModule, RecordingPresets, setAudioModeAsync } from 'expo-audio';
 import { classifier, CryPrediction } from '../model/cryClassifier';
+import { extractFeatures } from '../model/mfcc';
+import { addResearch, findUserByEmail, getCurrentEmail } from '../storage/db';
 import { colors, gradients, spacing } from '../theme/tokens';
 
 interface Props {
@@ -86,6 +88,23 @@ export function RecordScreen({ onBack, onResult }: Props) {
             prediction = await (classifier as any).classifyFeatures(ch, audioBuf.sampleRate);
             console.log('[BabyOps] SVM prediction', prediction);
             ctx.close?.();
+            // Riset opt-in: simpan vektor MFCC anonim (TANPA audio mentah, TANPA identitas)
+            try {
+              const email = await getCurrentEmail();
+              const dbUser = email ? await findUserByEmail(email) : null;
+              if (dbUser?.researchConsent && prediction) {
+                const { vector } = extractFeatures(ch, audioBuf.sampleRate);
+                await addResearch({
+                  type: 'cry',
+                  appVersion: '1.0.0',
+                  features: Array.from(vector).map((v) => Math.round(v * 100000) / 100000),
+                  predictedLabel: prediction.label,
+                  confidence: Math.round(prediction.confidence * 1000) / 1000,
+                });
+              }
+            } catch (e) {
+              console.warn('[BabyOps] Gagal simpan sampel riset:', e);
+            }
           } else {
             console.warn('[BabyOps] AudioContext tidak tersedia');
           }
