@@ -216,8 +216,13 @@ export default function App() {
         }
         const email = await DB.getCurrentEmail();
         if (email) {
-          const dbUser = await DB.findUserByEmail(email);
+          let dbUser = await DB.findUserByEmail(email);
           if (dbUser) {
+            // repair sekali jalan untuk data kembar versi awal (ID ganda)
+            if (DB.babiesNeedRepair(dbUser)) {
+              await DB.upsertUser(dbUser);
+              dbUser = (await DB.findUserByEmail(email)) ?? dbUser;
+            }
             setUser(toAppUser(dbUser));
             const h = await DB.loadHistory(email);
             setHistory(h);
@@ -380,7 +385,7 @@ export default function App() {
     const dbUser = await DB.findUserByEmail(user.email);
     if (!dbUser) return null;
     const migrated = DB.ensureBabies(dbUser);
-    const baby: DB.Baby = { id: `baby_${Date.now()}`, name: name.trim() || `Bayi ${(migrated.babies ?? []).length + 1}`, dob, gender };
+    const baby: DB.Baby = { id: DB.newBabyId(), name: name.trim() || `Bayi ${(migrated.babies ?? []).length + 1}`, dob, gender };
     const updated: DB.DbUser = {
       ...migrated,
       babies: [...(migrated.babies ?? []), baby],
@@ -427,7 +432,7 @@ export default function App() {
           research_consent: researchConsent,
         });
       }
-      const firstBaby: DB.Baby = { id: `baby_${Date.now()}`, name: babyName, dob: babyDob || undefined };
+      const firstBaby: DB.Baby = { id: DB.newBabyId(), name: babyName, dob: babyDob || undefined };
       const cloudDbUser: DB.DbUser = {
         id: userId,
         name: parentName,
@@ -456,7 +461,7 @@ export default function App() {
       setRoute({ name: 'login' });
       return;
     }
-    const firstBabyLocal: DB.Baby = { id: `baby_${Date.now()}`, name: babyName, dob: babyDob || undefined };
+    const firstBabyLocal: DB.Baby = { id: DB.newBabyId(), name: babyName, dob: babyDob || undefined };
     const newUser: import('./src/storage/db').DbUser = {
       id: String(Date.now()),
       name: parentName,
@@ -549,6 +554,12 @@ export default function App() {
     }
   };
 
+  const activeBaby = getActiveBabyOf(user);
+  const babyAge = getAgeMonths(activeBaby?.dob ?? user?.babyDob);
+  const visibleHistory = activeBaby
+    ? history.filter((h) => !h.babyId || h.babyId === activeBaby.id)
+    : history;
+
   const wrapWeb = (content: React.ReactNode) => {
     if (Platform.OS !== 'web') return content;
     return <View style={styles.webOuter}><View style={styles.webPhone}><View style={styles.webPhoneInner}>{content}</View></View></View>;
@@ -614,6 +625,10 @@ export default function App() {
     return wrapWeb(
       <ScreenView style={styles.safe}>
         <RecordScreen
+          babyName={activeBaby?.name}
+          babies={user?.babies ?? []}
+          activeBabyId={activeBaby?.id}
+          onSelectBaby={handleSelectBaby}
           onBack={() => goMain('home')}
           onResult={(prediction) => setRoute({ name: 'result', prediction })}
         />
@@ -654,11 +669,6 @@ export default function App() {
     );
   }
 
-  const activeBaby = getActiveBabyOf(user);
-  const babyAge = getAgeMonths(activeBaby?.dob ?? user?.babyDob);
-  const visibleHistory = activeBaby
-    ? history.filter((h) => !h.babyId || h.babyId === activeBaby.id)
-    : history;
   return wrapWeb(
     <ScreenView style={styles.safe}>
       {route.tab === 'home' && (
@@ -674,7 +684,14 @@ export default function App() {
           onRecord={() => setRoute({ name: 'record' })}
         />
       )}
-      {route.tab === 'diagnosis' && <DiagnosisScreen onSaveHistory={addHistory} />}
+      {route.tab === 'diagnosis' && (
+        <DiagnosisScreen
+          babies={user?.babies ?? []}
+          activeBabyId={activeBaby?.id}
+          onSelectBaby={handleSelectBaby}
+          onSaveHistory={addHistory}
+        />
+      )}
       {route.tab === 'education' && <EducationScreen />}
       {route.tab === 'profile' && (
         <ProfileScreen

@@ -9,11 +9,15 @@ import { addResearch, findUserByEmail, getCurrentEmail } from '../storage/db';
 import { colors, gradients, spacing } from '../theme/tokens';
 
 interface Props {
+  babyName?: string;
+  babies?: Array<{ id: string; name: string }>;
+  activeBabyId?: string;
+  onSelectBaby?: (id: string) => void;
   onBack: () => void;
   onResult: (prediction: CryPrediction) => void;
 }
 
-export function RecordScreen({ onBack, onResult }: Props) {
+export function RecordScreen({ babyName, babies = [], activeBabyId, onSelectBaby, onBack, onResult }: Props) {
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [processing, setProcessing] = useState(false);
@@ -136,6 +140,25 @@ export function RecordScreen({ onBack, onResult }: Props) {
       </View>
 
       <View style={styles.center}>
+        {babyName ? (
+          <View style={styles.babyPill}>
+            <Ionicons name="happy" size={14} color={colors.primary} />
+            <Text style={styles.babyPillText}>Rekam untuk: {babyName}</Text>
+          </View>
+        ) : null}
+        {babies.length > 1 ? (
+          <View style={styles.babySwitch}>
+            {babies.map((b) => (
+              <Pressable
+                key={b.id}
+                onPress={() => onSelectBaby?.(b.id)}
+                style={[styles.babyChip, b.id === activeBabyId && styles.babyChipOn]}
+              >
+                <Text style={[styles.babyChipText, b.id === activeBabyId && styles.babyChipTextOn]}>{b.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         <Text style={styles.kicker}>{processing ? 'MENGANALISIS SUARA…' : recording ? 'SEDANG MENDENGARKAN…' : 'ANALISIS SUARA BAYI'}</Text>
         <Text style={styles.bigTitle}>{recording ? 'Sedang mendengarkan…' : 'Rekam tangisan bayi'}</Text>
         <Text style={styles.desc}>Dekatkan ponsel sekitar 30–50 cm dari bayi dan pastikan suasana cukup tenang.</Text>
@@ -172,6 +195,13 @@ const styles = StyleSheet.create({
   back: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   backText: { color: colors.white, fontSize: 14, fontWeight: '700' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  babyPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.white, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 7, marginBottom: 10 },
+  babyPillText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
+  babySwitch: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginBottom: 10 },
+  babyChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)' },
+  babyChipOn: { backgroundColor: colors.white, borderColor: colors.white },
+  babyChipText: { color: '#E9F7FF', fontSize: 12, fontWeight: '800' },
+  babyChipTextOn: { color: colors.primary },
   kicker: { fontSize: 11, fontWeight: '900', letterSpacing: 1.4, color: '#CFF2FF', textAlign: 'center' },
   bigTitle: { fontSize: 26, fontWeight: '900', color: colors.white, textAlign: 'center', marginTop: 8 },
   desc: { color: '#D5EFF9', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 9, maxWidth: 320 },

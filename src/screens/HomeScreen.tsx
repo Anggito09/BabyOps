@@ -246,7 +246,7 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], b
                     </Animated.View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.modalTitle}>{selectedHistory.conditionName}</Text>
-                      <Text style={styles.modalDate}>{selectedHistory.date} • {selectedHistory.matchedSymptoms} gejala</Text>
+                      <Text style={styles.modalDate}>{selectedHistory.babyName ? `${selectedHistory.babyName} • ` : ''}{selectedHistory.date} • {selectedHistory.matchedSymptoms} gejala</Text>
                     </View>
                     <Pressable onPress={() => setSelectedHistory(null)} hitSlop={10} style={styles.modalClose}>
                       <Ionicons name="close" size={20} color={colors.muted} />
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   severityMiniText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
   historyTitle: { fontSize: 17, fontWeight: '900', color: colors.ink, marginBottom: 5 },
   historyBody: { fontSize: 12, color: colors.muted, lineHeight: 18 },
-  more: { alignSelf: 'flex-end', fontSize: 11, color: colors.githubDark, fontWeight: '800', marginTop: 8 },
+  more: { alignSelf: 'flex-end', fontSize: 11, color: colors.githubDark, fontWeight: '800', marginTop: 8, flexShrink: 1, flexWrap: 'wrap', textAlign: 'right' } as any,
   quickRow: { flexDirection: 'row', gap: 12 },
   quickCard: {
     flex: 1,

@@ -25,24 +25,46 @@ export interface DbUser {
   researchConsentAt?: string;
 }
 
+/** ID unik bayi — pakai random suffix karena Date.now() saja bisa kembar dalam 1 ms. */
+export function newBabyId(): string {
+  return `baby_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 /** Migrasi user lama (babyName/babyDob) ke babies[0]. Idempotent. */
 export function ensureBabies(user: DbUser): DbUser {
+  let babies: Baby[];
   if (user.babies && user.babies.length > 0) {
-    if (!user.activeBabyId || !user.babies.some((b) => b.id === user.activeBabyId)) {
-      return { ...user, activeBabyId: user.babies[0].id };
-    }
-    return user;
-  }
-  if (user.babyName || user.babyDob) {
-    const first: Baby = {
-      id: `baby_${Date.now()}`,
+    babies = [...user.babies];
+  } else if (user.babyName || user.babyDob) {
+    babies = [{
+      id: newBabyId(),
       name: user.babyName ?? 'Si Kecil',
       dob: user.babyDob,
       gender: user.babyGender,
-    };
-    return { ...user, babies: [first], activeBabyId: first.id };
+    }];
+  } else {
+    babies = [];
   }
-  return { ...user, babies: [], activeBabyId: undefined };
+  // Repair: ID ganda (bug versi awal) bikin switcher/hapus/riwayat rusak.
+  // Tiap bayi wajib punya ID unik — yang duplikat diganti baru.
+  const seen = new Set<string>();
+  babies = babies.map((b) => {
+    let id = b.id || newBabyId();
+    if (seen.has(id)) id = newBabyId();
+    seen.add(id);
+    return id === b.id ? b : { ...b, id };
+  });
+  const activeBabyId =
+    user.activeBabyId && seen.has(user.activeBabyId) ? user.activeBabyId : babies[0]?.id;
+  return { ...user, babies, activeBabyId };
+}
+
+/** True kalau data bayi user butuh repair (ID ganda / activeBabyId hilang). */
+export function babiesNeedRepair(user: DbUser): boolean {
+  const ids = (user.babies ?? []).map((b) => b.id);
+  if (new Set(ids).size !== ids.length) return true;
+  if (ids.length > 0 && (!user.activeBabyId || !ids.includes(user.activeBabyId))) return true;
+  return false;
 }
 
 export function getBabies(user: DbUser | null | undefined): Baby[] {

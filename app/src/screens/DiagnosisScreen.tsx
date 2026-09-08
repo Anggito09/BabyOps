@@ -20,6 +20,9 @@ function AnimatedCat({ index, children }: { index: number; children: React.React
 }
 
 interface Props {
+  babies?: Array<{ id: string; name: string }>;
+  activeBabyId?: string;
+  onSelectBaby?: (id: string) => void;
   onSaveHistory?: (entry: {
     conditionName: string;
     description: string;
@@ -33,7 +36,8 @@ interface Props {
   }) => void;
 }
 
-export function DiagnosisScreen({ onSaveHistory }: Props) {
+export function DiagnosisScreen({ babies = [], activeBabyId, onSelectBaby, onSaveHistory }: Props) {
+  const activeBaby = babies.find((b) => b.id === activeBabyId) ?? babies[0] ?? null;
   const [activeCategory, setActiveCategory] = useState<SymptomCategory | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [showResult, setShowResult] = useState(false);
@@ -85,7 +89,7 @@ export function DiagnosisScreen({ onSaveHistory }: Props) {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <GradientHeader
             title="Hasil Screening"
-            subtitle={`${selected.length} gejala dipilih · ${outcome.matchedRules} aturan cocok${outcome.isEmergency ? ' · TANDA BAHAYA' : ''}`}
+            subtitle={`${activeBaby ? `Untuk ${activeBaby.name} · ` : ''}${selected.length} gejala dipilih · ${outcome.matchedRules} aturan cocok${outcome.isEmergency ? ' · TANDA BAHAYA' : ''}`}
             onBack={() => setShowResult(false)}
           />
           <View style={styles.body}>
@@ -200,6 +204,30 @@ export function DiagnosisScreen({ onSaveHistory }: Props) {
         </GradientHeader>
 
         <View style={styles.body}>
+          {activeBaby ? (
+            <View style={styles.babyBar}>
+              <Ionicons name="happy" size={16} color={colors.primary} />
+              <Text style={styles.babyBarText}>
+                Diagnosa untuk: <Text style={styles.babyBarName}>{activeBaby.name}</Text>
+              </Text>
+              {babies.length > 1 ? (
+                <View style={styles.babyChips}>
+                  {babies.map((b) => (
+                    <TouchableOpacity
+                      key={b.id}
+                      onPress={() => onSelectBaby?.(b.id)}
+                      style={[styles.babyChip, b.id === activeBaby.id && styles.babyChipOn]}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.babyChipText, b.id === activeBaby.id && styles.babyChipTextOn]}>
+                        {b.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
           <Text style={styles.hint}>Pilih kategori, lalu centang gejala yang terlihat pada bayi Anda.</Text>
 
           <View style={styles.grid}>
@@ -296,9 +324,28 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: font.small,
     lineHeight: 20,
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     fontFamily: family.medium,
   },
+  babyBar: {
+    backgroundColor: '#EAF4FF',
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    borderWidth: 1,
+    borderColor: '#CDE7FA',
+  },
+  babyBarText: { fontSize: font.small, color: colors.textMuted, fontWeight: '600' },
+  babyBarName: { fontWeight: '900', color: colors.primary },
+  babyChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4, width: '100%' },
+  babyChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill, backgroundColor: colors.white, borderWidth: 1, borderColor: '#CDE7FA' },
+  babyChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  babyChipText: { fontSize: font.small, fontWeight: '800', color: colors.primary },
+  babyChipTextOn: { color: colors.white },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

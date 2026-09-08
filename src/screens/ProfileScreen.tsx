@@ -223,7 +223,7 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
                   {mode === 'reminder' && <Ionicons name="notifications" size={28} color={colors.primary} />}
                   {mode === 'privacy' && <Ionicons name="shield-checkmark" size={28} color={colors.primary} />}
                 </View>
-                <Text style={styles.modalTitle}>{mode === 'parent' ? 'Data Orang Tua' : mode === 'baby' ? 'Profil Bayi' : mode === 'reminder' ? 'Pengingat' : 'Privasi & Keamanan'}</Text>
+                <Text style={styles.modalTitle}>{mode === 'parent' ? 'Data Orang Tua' : mode === 'baby' ? `Profil Bayi — ${form.babyName || user?.babyName || ''}`.trim() : mode === 'reminder' ? 'Pengingat' : 'Privasi & Keamanan'}</Text>
               </View>
               <Pressable onPress={() => setMode(null)} hitSlop={8} style={styles.closeBtn}>
                 <Ionicons name="close" size={20} color={colors.muted} />
@@ -277,6 +277,7 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
                   <Ionicons name={showCal ? 'chevron-up' : 'chevron-down'} size={14} color="#7A8CA8" />
                 </Pressable>
                 {showCal && <CalendarPicker value={form.babyDob ? new Date(form.babyDob) : null} maxDate={new Date()} minDate={new Date(2020, 0, 1)} onChange={(d) => { setForm({ ...form, babyDob: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }); setShowCal(false); }} />}
+                <Text style={styles.babyEditHint}>Ini data bayi AKTIF{(babies.length > 1) ? ' — untuk edit bayi lain, pilih dulu di daftar Bayi saya lalu buka lagi' : ''}.</Text>
                 <View style={styles.illustWrap}>
                   <Image source={require('../../assets/onboarding-baby-bottle.png')} style={styles.illust} resizeMode="contain" />
                   <Text style={styles.illustCaption}>Umur bayi dipakai untuk badge {babyAge} bulan di Home</Text>
@@ -425,6 +426,7 @@ const styles = StyleSheet.create({
   rowTextWrap: { flex: 1, gap: 2 },
   rowText: { color: colors.ink, fontSize: 13, fontWeight: '800' },
   rowHint: { color: colors.muted, fontSize: 11, fontWeight: '600' },
+  babyEditHint: { fontSize: 11, color: colors.primary, fontWeight: '700', backgroundColor: '#EAF4FF', borderRadius: 10, padding: 10, lineHeight: 16 },
   babyListHead: { paddingTop: 12, paddingBottom: 4 },
   babyListTitle: { fontSize: 13, fontWeight: '900', color: colors.ink },
   babyListHint: { fontSize: 11, color: colors.muted, marginTop: 2 },
