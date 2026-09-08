@@ -116,10 +116,18 @@ export function extractFeatures(samples: Float32Array, sr: number): MfccResult {
     }
     samples = out;
   }
+  // batasi durasi maks 10 dtk (sesuai data latih) agar ringan & konsisten
+  const maxLen = SR * 10;
+  if (samples.length > maxLen) samples = samples.slice(0, maxLen);
   // trim silence (top_db=30 setara)
   let start = 0;
   let end = samples.length - 1;
-  const peak = Math.max(...Array.from(samples).map(Math.abs)) || 1e-10;
+  // JANGAN pakai Math.max(...array): stack overflow untuk rekaman panjang.
+  let peak = 1e-10;
+  for (let i = 0; i < samples.length; i++) {
+    const a = Math.abs(samples[i]);
+    if (a > peak) peak = a;
+  }
   const thresh = peak * Math.pow(10, -30 / 20);
   while (start < samples.length && Math.abs(samples[start]) < thresh) start++;
   while (end > start && Math.abs(samples[end]) < thresh) end--;

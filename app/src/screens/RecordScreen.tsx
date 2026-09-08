@@ -113,7 +113,7 @@ export function RecordScreen({ babyName, babies = [], activeBabyId, onSelectBaby
             console.warn('[BabyOps] AudioContext tidak tersedia');
           }
         } catch (e) {
-          console.warn('[BabyOps] Dekode audio gagal, fallback:', e);
+          console.warn('[BabyOps] Analisis audio gagal (decode/ekstraksi), fallback:', e);
         }
       }
       if (!prediction) {

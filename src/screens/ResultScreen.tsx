@@ -79,6 +79,14 @@ export function ResultScreen({ prediction, onBack, onHome }: Props) {
           <View style={styles.confidencePill}>
             <Text style={styles.confidenceText}>Tingkat keyakinan {Math.round(prediction.confidence * 100)}%</Text>
           </View>
+          {prediction.confidence < 0.4 ? (
+            <View style={styles.unsureBox}>
+              <Ionicons name="warning" size={18} color="#8A6A00" />
+              <Text style={styles.unsureText}>
+                Keyakinan rendah — hasil belum bisa dipercaya. Rekam ulang 5–10 detik di ruangan tenang, dekatkan HP 30–50 cm dari bayi.
+              </Text>
+            </View>
+          ) : null}
           <Text style={styles.meaning}>Bayi Anda {result.meaning.toLowerCase()}</Text>
           <Text style={styles.copy}>{result.description}</Text>
           <View style={styles.notice}>
@@ -114,6 +122,8 @@ const styles = StyleSheet.create({
   sound: { fontSize: 34, fontWeight: '900', color: colors.ink, marginTop: 14 },
   confidencePill: { backgroundColor: '#E4F7E7', paddingHorizontal: 13, paddingVertical: 6, borderRadius: 12, marginTop: 6 },
   confidenceText: { color: '#26813B', fontSize: 11, fontWeight: '800' },
+  unsureBox: { flexDirection: 'row', gap: 8, backgroundColor: '#FFF4D9', borderRadius: 13, padding: 12, alignItems: 'center', alignSelf: 'stretch', marginTop: 10, borderWidth: 1, borderColor: '#F0D488' },
+  unsureText: { fontSize: 11, color: '#5B4A00', lineHeight: 16, flex: 1, fontWeight: '600' },
   meaning: { color: colors.ink, fontSize: 16, fontWeight: '700', marginTop: 8 },
   copy: { fontSize: 14, color: colors.ink, lineHeight: 22, textAlign: 'center', marginVertical: 16 },
   notice: { flexDirection: 'row', gap: 9, backgroundColor: '#FFF4D9', borderRadius: 13, padding: 13, alignItems: 'center', alignSelf: 'stretch', marginBottom: 16 },
