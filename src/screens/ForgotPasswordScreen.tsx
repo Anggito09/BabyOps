@@ -47,10 +47,13 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
     }
     const generated = String(Math.floor(100000 + Math.random() * 900000));
     setExpectedCode(generated);
-    await emailService.sendResetCode(user.email, user.name, generated);
-    setInfo(`Kode reset dikirim ke ${user.email}. (Mode demo: kode tercatat di outbox console)`);
-    // debug: tampilkan kode di info agar tester bisa lanjut tanpa cek email
-    setInfo(`Kode reset dikirim ke ${user.email}. (Mode demo: ${generated})`);
+    // Kirim kode ASLI via email. Kode tidak pernah ditampilkan di layar.
+    const sent = await emailService.sendResetCode(user.email, user.name, generated);
+    if (!sent) {
+      setError('Gagal mengirim email. Periksa koneksi lalu coba lagi.');
+      return;
+    }
+    setInfo(`Kode 6 digit dikirim ke ${user.email}. Cek inbox/spam Anda.`);
     setError('');
     setStep(2);
   };
@@ -118,7 +121,7 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
                 <View style={styles.pillIcon}><Ionicons name="mail" size={14} color="#7A8CA8" /></View>
                 <TextInput placeholder="email@anda.com" placeholderTextColor="#8FA0B8" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" style={styles.input} />
               </View>
-              <Text style={styles.hint}>Kode 6 digit akan dikirim ke email ini.</Text>
+              <Text style={styles.hint}>Kode 6 digit akan dikirim ke email ini. Tidak dapat email? Cek folder spam/promosi.</Text>
             </>
           )}
 
@@ -130,6 +133,7 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
                 <TextInput placeholder="6 digit" placeholderTextColor="#8FA0B8" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} style={styles.input} />
               </View>
               {info ? <Text style={styles.info}>{info}</Text> : null}
+              <Text style={styles.hint}>Tidak menemukan email? Periksa folder spam/promosi.</Text>
             </>
           )}
 
