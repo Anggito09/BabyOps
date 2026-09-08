@@ -3,23 +3,34 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 /**
  * EmailService — kirim email notifikasi ke pengguna.
  *
+ * Konfigurasi via environment (TIDAK ada secret di repo):
+ *   EXPO_PUBLIC_EMAILJS_SERVICE_ID / _WELCOME_TEMPLATE_ID / _RESET_TEMPLATE_ID /
+ *   _CHANGED_TEMPLATE_ID / _PUBLIC_KEY
+ * Lokal: isi file .env (gitignored, lihat .env.example).
+ * Vercel: Project Settings > Environment Variables. EAS: eas secret:create.
+ *
  * Mode:
- * 1. REAL   — isi EMAILJS_SERVICE_ID / TEMPLATE_ID / PUBLIC_KEY (gratis, tanpa backend).
- *             Lihat https://www.emailjs.com/docs/sdk/send-emails/ (REST API langsung).
- * 2. OUTBOX — fallback demo: email disimpan ke AsyncStorage + console.log,
- *             sehingga alur (welcome / reset kode / password berubah) tetap bisa dites.
+ * 1. REAL   — semua env terisi: kirim via EmailJS REST API (gratis, tanpa backend).
+ * 2. OUTBOX — env belum diisi: email disimpan ke AsyncStorage (max 30),
+ *             alur tetap bisa dites tanpa kirim email sungguhan.
  */
 
 const CONFIG = {
-  serviceId: 'service_dsvufq9',
-  welcomeTemplateId: 'template_59dazod',
-  resetTemplateId: 'template_4jbxtab',
-  changedTemplateId: 'template_4jbxtab',
-  publicKey: '4hVhSvTYRDSSasM3Z',
+  serviceId: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID ?? '',
+  welcomeTemplateId: process.env.EXPO_PUBLIC_EMAILJS_WELCOME_TEMPLATE_ID ?? '',
+  resetTemplateId: process.env.EXPO_PUBLIC_EMAILJS_RESET_TEMPLATE_ID ?? '',
+  changedTemplateId:
+    process.env.EXPO_PUBLIC_EMAILJS_CHANGED_TEMPLATE_ID ??
+    process.env.EXPO_PUBLIC_EMAILJS_RESET_TEMPLATE_ID ??
+    '',
+  publicKey: process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY ?? '',
 };
 
 const isConfigured = () =>
-  !CONFIG.serviceId.includes('xxxxxxx') && !CONFIG.publicKey.includes('xxxxxxxx');
+  CONFIG.serviceId.length > 0 &&
+  CONFIG.publicKey.length > 0 &&
+  CONFIG.welcomeTemplateId.length > 0 &&
+  CONFIG.resetTemplateId.length > 0;
 
 const OUTBOX_KEY = 'babyops_email_outbox_v1';
 
@@ -28,7 +39,8 @@ async function pushOutbox(entry: { to: string; subject: string; body: string }) 
   const box = raw ? JSON.parse(raw) : [];
   box.unshift({ ...entry, at: new Date().toISOString() });
   await AsyncStorage.setItem(OUTBOX_KEY, JSON.stringify(box.slice(0, 30)));
-  console.log(`[BabyOps Email → ${entry.to}] ${entry.subject}\n${entry.body}`);
+  // Catat metadata saja — JANGAN log body (berisi kode reset).
+  console.log(`[BabyOps Email outbox → ${entry.to}] ${entry.subject}`);
 }
 
 async function sendViaEmailJS(templateId: string, params: Record<string, string>) {
