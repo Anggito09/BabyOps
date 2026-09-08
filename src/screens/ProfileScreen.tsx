@@ -7,17 +7,23 @@ import { CalendarPicker } from '../components/CalendarPicker';
 import { getImmunizationStatus } from '../data/immunization';
 
 interface Props {
-  user?: { name: string; email: string; babyDob?: string; babyName?: string; babyGender?: string; phone?: string; address?: string } | null;
+  user?: { name: string; email: string; babyDob?: string; babyName?: string; babyGender?: string; babies?: Array<{ id: string; name: string; dob?: string; gender?: string }>; activeBabyId?: string; phone?: string; address?: string } | null;
   babyAge?: string;
   historyCount?: number;
   onLogout: () => void;
   onLogin: () => void;
   onSave?: (data: Partial<{ name: string; babyName: string; babyDob: string; babyGender: string; phone: string; address: string }>) => void;
+  onSelectBaby?: (id: string) => void;
+  onAddBaby?: (name: string, dob?: string, gender?: 'L' | 'P') => void;
+  onDeleteBaby?: (id: string) => void;
 }
 
 type Mode = null | 'parent' | 'baby' | 'reminder' | 'privacy';
 
-export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout, onLogin, onSave }: Props) {
+export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout, onLogin, onSave, onSelectBaby, onAddBaby, onDeleteBaby }: Props) {
+  const babies = user?.babies ?? [];
+  const [newBabyName, setNewBabyName] = useState('');
+  const [addingBaby, setAddingBaby] = useState(false);
   const isNewUser = historyCount === 0;
   const [mode, setMode] = useState<Mode>(null);
   const [form, setForm] = useState({ name: user?.name ?? '', babyName: user?.babyName ?? '', babyDob: user?.babyDob ?? '', phone: user?.phone ?? '', address: user?.address ?? '', babyGender: (user?.babyGender as string) ?? 'L' });
@@ -112,9 +118,66 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
           </View>
 
           <View style={styles.card}>
+            <View style={styles.babyListHead}>
+              <Text style={styles.babyListTitle}>Bayi saya ({babies.length || 1})</Text>
+              <Text style={styles.babyListHint}>Ketuk untuk ganti • cocok untuk kembar</Text>
+            </View>
+            {(babies.length > 0 ? babies : [{ id: 'legacy', name: user?.babyName ?? 'Si Kecil', dob: user?.babyDob, gender: user?.babyGender }]).map((b: any) => {
+              const on = (user?.activeBabyId ?? babies[0]?.id) === b.id || (babies.length === 0);
+              return (
+                <Pressable
+                  key={b.id}
+                  onPress={() => babies.length > 0 && onSelectBaby?.(b.id)}
+                  style={[styles.babyRow, on && styles.babyRowOn]}
+                >
+                  <View style={[styles.babyAvatar, on && styles.babyAvatarOn]}>
+                    <Ionicons name="happy" size={16} color={on ? colors.white : colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.babyName}>{b.name}</Text>
+                    <Text style={styles.babySub}>{b.dob ?? user?.babyDob ?? '—'} {on ? '• aktif' : ''}</Text>
+                  </View>
+                  {babies.length > 1 && (
+                    <Pressable onPress={() => onDeleteBaby?.(b.id)} hitSlop={8} style={styles.babyDel}>
+                      <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                    </Pressable>
+                  )}
+                </Pressable>
+              );
+            })}
+            {addingBaby ? (
+              <View style={styles.addBabyRow}>
+                <TextInput
+                  value={newBabyName}
+                  onChangeText={setNewBabyName}
+                  placeholder="Nama bayi ke-2 (mis. Kembar B)"
+                  placeholderTextColor="#8FA0B8"
+                  style={styles.addBabyInput}
+                />
+                <Pressable
+                  onPress={() => {
+                    if (!newBabyName.trim()) return;
+                    onAddBaby?.(newBabyName.trim());
+                    setNewBabyName('');
+                    setAddingBaby(false);
+                  }}
+                  style={styles.addBabyBtn}
+                >
+                  <Text style={styles.addBabyBtnText}>Simpan</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable onPress={() => setAddingBaby(true)} style={styles.addBabyCta}>
+                <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
+                <Text style={styles.addBabyCtaText}>Tambah bayi (kembar)</Text>
+              </Pressable>
+            )}
+          </View>
+
+          <View style={styles.card}>
             {[
               { icon: 'person', label: 'Data orang tua', hint: user?.phone ? user.phone : 'Lengkapi', mode: 'parent' as Mode, img: require('../../assets/auth-mother-signup.png') },
-              { icon: 'happy', label: 'Profil bayi', hint: user?.babyName ? user.babyName + ' • ' + babyAge + ' bln' : 'Atur nama & TTL', mode: 'baby' as Mode, img: require('../../assets/onboarding-baby-bottle.png') },
+              { icon: 'happy', label: 'Profil bayi aktif', hint: user?.babyName ? user.babyName + ' • ' + babyAge + ' bln' : 'Atur nama & TTL', mode: 'baby' as Mode, img: require('../../assets/onboarding-baby-bottle.png') },
               { icon: 'notifications', label: 'Pengingat', hint: 'Imunisasi', mode: 'reminder' as Mode, img: require('../../assets/onboarding-baby-cry.png') },
               { icon: 'shield-checkmark', label: 'Privasi & keamanan', hint: 'Lokal', mode: 'privacy' as Mode, img: require('../../assets/onboarding-mother.png') },
             ].map((it) => (
@@ -362,6 +425,22 @@ const styles = StyleSheet.create({
   rowTextWrap: { flex: 1, gap: 2 },
   rowText: { color: colors.ink, fontSize: 13, fontWeight: '800' },
   rowHint: { color: colors.muted, fontSize: 11, fontWeight: '600' },
+  babyListHead: { paddingTop: 12, paddingBottom: 4 },
+  babyListTitle: { fontSize: 13, fontWeight: '900', color: colors.ink },
+  babyListHint: { fontSize: 11, color: colors.muted, marginTop: 2 },
+  babyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EDF2F4' },
+  babyRowOn: { backgroundColor: '#F0F8FF', borderRadius: 12, paddingHorizontal: 8 },
+  babyAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#EAF4FF', alignItems: 'center', justifyContent: 'center' },
+  babyAvatarOn: { backgroundColor: colors.primary },
+  babyName: { fontSize: 13, fontWeight: '800', color: colors.ink },
+  babySub: { fontSize: 11, color: colors.muted, marginTop: 1 },
+  babyDel: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF0F1', alignItems: 'center', justifyContent: 'center' },
+  addBabyCta: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12 },
+  addBabyCtaText: { fontSize: 12, fontWeight: '800', color: colors.primary },
+  addBabyRow: { flexDirection: 'row', gap: 8, paddingVertical: 10, alignItems: 'center' },
+  addBabyInput: { flex: 1, height: 42, borderRadius: 12, borderWidth: 1, borderColor: '#D6E6F2', paddingHorizontal: 12, fontSize: 12, color: colors.ink } as any,
+  addBabyBtn: { backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 14, height: 42, alignItems: 'center', justifyContent: 'center' },
+  addBabyBtnText: { color: colors.white, fontSize: 12, fontWeight: '800' },
   logout: { marginVertical: 12, borderRadius: 14, overflow: 'hidden' },
   logoutGrad: { height: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14 },
   logoutText: { fontSize: 13, fontWeight: '800' },

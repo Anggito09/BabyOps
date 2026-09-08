@@ -57,6 +57,59 @@ export interface DiagnosisHistoryEntry {
   cryLabel?: string;
   cryMeaning?: string;
   confidence?: number;
+  babyId?: string; // multi-bayi: riwayat milik bayi mana
+  babyName?: string; // denormalisasi agar history lama tetap tampil
+}
+
+export interface AppBaby {
+  id: string;
+  name: string;
+  dob?: string;
+  gender?: string;
+}
+
+export interface AppUser {
+  name: string;
+  email: string;
+  babyDob?: string;
+  babyName?: string;
+  babyGender?: string;
+  babies?: AppBaby[];
+  activeBabyId?: string;
+  phone?: string;
+  address?: string;
+}
+
+function toAppUser(dbUser: DB.DbUser): AppUser {
+  const migrated = DB.ensureBabies(dbUser);
+  const babies: AppBaby[] = (migrated.babies ?? []).map((b) => ({
+    id: b.id,
+    name: b.name,
+    dob: b.dob,
+    gender: b.gender,
+  }));
+  const active = DB.getActiveBaby(migrated);
+  return {
+    name: migrated.name,
+    email: migrated.email,
+    babyDob: active?.dob ?? migrated.babyDob,
+    babyName: active?.name ?? migrated.babyName,
+    babyGender: active?.gender ?? migrated.babyGender,
+    babies,
+    activeBabyId: active?.id ?? migrated.activeBabyId,
+    phone: migrated.phone,
+    address: migrated.address,
+  };
+}
+
+function getActiveBabyOf(user: AppUser | null): AppBaby | null {
+  if (!user) return null;
+  const list = user.babies ?? [];
+  if (list.length === 0) {
+    if (!user.babyName && !user.babyDob) return null;
+    return { id: 'legacy', name: user.babyName ?? 'Si Kecil', dob: user.babyDob, gender: user.babyGender };
+  }
+  return list.find((b) => b.id === user.activeBabyId) ?? list[0];
 }
 
 type Route =
@@ -82,7 +135,7 @@ function getAgeMonths(dobStr?: string): string {
 
 export default function App() {
   const [route, setRoute] = useState<Route>({ name: 'splash' });
-  const [user, setUser] = useState<{ name: string; email: string; babyDob?: string; babyName?: string; babyGender?: string; phone?: string; address?: string } | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [history, setHistory] = useState<DiagnosisHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState('');
@@ -117,12 +170,17 @@ export default function App() {
               cloudLoadHistory(),
             ]);
             const name = profile?.name || session.email.split('@')[0] || 'Orang Tua';
+            const cloudBaby: AppBaby | null = profile?.baby_name || profile?.baby_dob
+              ? { id: 'baby_cloud_primary', name: profile.baby_name ?? 'Si Kecil', dob: profile.baby_dob ?? undefined, gender: profile.baby_gender ?? undefined }
+              : null;
             setUser({
               name,
               email: session.email,
               babyDob: profile?.baby_dob ?? undefined,
               babyName: profile?.baby_name ?? undefined,
               babyGender: profile?.baby_gender ?? undefined,
+              babies: cloudBaby ? [cloudBaby] : [],
+              activeBabyId: cloudBaby?.id,
               phone: profile?.phone ?? undefined,
               address: profile?.address ?? undefined,
             });
@@ -144,6 +202,8 @@ export default function App() {
                   cryLabel: r.cry_label ?? undefined,
                   cryMeaning: r.cry_meaning ?? undefined,
                   confidence: r.confidence ?? undefined,
+                  babyId: (r as any).baby_id ?? undefined,
+                  babyName: (r as any).baby_name ?? undefined,
                 }))
               );
             } else {
@@ -158,7 +218,7 @@ export default function App() {
         if (email) {
           const dbUser = await DB.findUserByEmail(email);
           if (dbUser) {
-            setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob, babyName: dbUser.babyName, babyGender: dbUser.babyGender, phone: dbUser.phone, address: dbUser.address });
+            setUser(toAppUser(dbUser));
             const h = await DB.loadHistory(email);
             setHistory(h);
             setRoute({ name: 'main', tab: 'home' });
@@ -186,7 +246,7 @@ export default function App() {
       if (res.ok && res.userId) {
         const profile = await cloudLoadProfile();
         const name = profile?.name || clean.split('@')[0] || 'Orang Tua';
-        await DB.upsertUser({
+        const loginDbUser: DB.DbUser = {
           id: res.userId,
           name,
           email: clean,
@@ -198,17 +258,10 @@ export default function App() {
           provider: 'email',
           createdAt: new Date().toISOString(),
           researchConsent: profile?.research_consent ?? false,
-        });
+        };
+        await DB.upsertUser(loginDbUser);
         await DB.setCurrentEmail(clean);
-        setUser({
-          name,
-          email: clean,
-          babyDob: profile?.baby_dob ?? undefined,
-          babyName: profile?.baby_name ?? undefined,
-          babyGender: profile?.baby_gender ?? undefined,
-          phone: profile?.phone ?? undefined,
-          address: profile?.address ?? undefined,
-        });
+        setUser(toAppUser(DB.ensureBabies(loginDbUser)));
         const cloudHist = await cloudLoadHistory();
         if (cloudHist.length > 0) {
           setHistory(
@@ -228,6 +281,8 @@ export default function App() {
               cryLabel: r.cry_label ?? undefined,
               cryMeaning: r.cry_meaning ?? undefined,
               confidence: r.confidence ?? undefined,
+              babyId: (r as any).baby_id ?? undefined,
+              babyName: (r as any).baby_name ?? undefined,
             }))
           );
         } else {
@@ -262,7 +317,7 @@ export default function App() {
       return;
     }
     await DB.setCurrentEmail(dbUser.email);
-    setUser({ name: dbUser.name, email: dbUser.email, babyDob: dbUser.babyDob, babyName: dbUser.babyName, babyGender: dbUser.babyGender, phone: dbUser.phone, address: dbUser.address });
+    setUser(toAppUser(dbUser));
     const h = await DB.loadHistory(dbUser.email);
     setHistory(h);
     goMain('home');
@@ -272,24 +327,84 @@ export default function App() {
     if (!user?.email) return;
     const dbUser = await DB.findUserByEmail(user.email);
     if (!dbUser) return;
-    const updated = { ...dbUser, ...data };
-    await DB.upsertUser(updated as any);
-    // dual-write ke cloud (APK): password TIDAK pernah dikirim, hanya profil
+    const migrated = DB.ensureBabies(dbUser);
+    // edit profil bayi = edit bayi aktif (agar kembar tidak ketuker)
+    let babies = migrated.babies ?? [];
+    const activeId = migrated.activeBabyId ?? babies[0]?.id;
+    if ((data.babyName !== undefined || data.babyDob !== undefined || data.babyGender !== undefined) && activeId) {
+      babies = babies.map((b) =>
+        b.id === activeId
+          ? {
+              ...b,
+              name: data.babyName ?? b.name,
+              dob: data.babyDob ?? b.dob,
+              gender: (data.babyGender as 'L' | 'P' | undefined) ?? b.gender,
+            }
+          : b
+      );
+    }
+    const updated: DB.DbUser = { ...migrated, ...data, babies, activeBabyId: activeId } as DB.DbUser;
+    await DB.upsertUser(updated);
+    // dual-write ke cloud (APK): password TIDAK pernah dikirim, hanya profil bayi aktif
     if (cloudActive) {
       const session = await cloudGetSessionUser();
       if (session) {
+        const active = DB.getActiveBaby(updated);
         await cloudUpsertProfile({
           user_id: session.id,
           name: updated.name,
-          baby_name: (updated as any).babyName ?? null,
-          baby_dob: updated.babyDob || null,
-          baby_gender: (updated as any).babyGender ?? null,
+          baby_name: active?.name ?? (updated as any).babyName ?? null,
+          baby_dob: active?.dob ?? updated.babyDob ?? null,
+          baby_gender: active?.gender ?? (updated as any).babyGender ?? null,
           phone: (updated as any).phone ?? null,
           address: (updated as any).address ?? null,
         });
       }
     }
-    setUser({ name: updated.name, email: updated.email, babyDob: updated.babyDob, babyName: (updated as any).babyName, babyGender: (updated as any).babyGender, phone: (updated as any).phone, address: (updated as any).address });
+    setUser(toAppUser(updated));
+  };
+
+  const handleSelectBaby = async (babyId: string) => {
+    if (!user?.email) return;
+    const dbUser = await DB.findUserByEmail(user.email);
+    if (!dbUser) return;
+    const migrated = DB.ensureBabies(dbUser);
+    if (!migrated.babies?.some((b) => b.id === babyId)) return;
+    const updated: DB.DbUser = { ...migrated, activeBabyId: babyId };
+    await DB.upsertUser(updated);
+    setUser(toAppUser(updated));
+  };
+
+  const handleAddBaby = async (name: string, dob?: string, gender?: 'L' | 'P') => {
+    if (!user?.email) return null;
+    const dbUser = await DB.findUserByEmail(user.email);
+    if (!dbUser) return null;
+    const migrated = DB.ensureBabies(dbUser);
+    const baby: DB.Baby = { id: `baby_${Date.now()}`, name: name.trim() || `Bayi ${(migrated.babies ?? []).length + 1}`, dob, gender };
+    const updated: DB.DbUser = {
+      ...migrated,
+      babies: [...(migrated.babies ?? []), baby],
+      activeBabyId: baby.id,
+    };
+    await DB.upsertUser(updated);
+    setUser(toAppUser(updated));
+    return baby.id;
+  };
+
+  const handleDeleteBaby = async (babyId: string) => {
+    if (!user?.email) return;
+    const dbUser = await DB.findUserByEmail(user.email);
+    if (!dbUser) return;
+    const migrated = DB.ensureBabies(dbUser);
+    const babies = (migrated.babies ?? []).filter((b) => b.id !== babyId);
+    if (babies.length === 0) return; // minimal 1 bayi
+    const updated: DB.DbUser = {
+      ...migrated,
+      babies,
+      activeBabyId: migrated.activeBabyId === babyId ? babies[0].id : migrated.activeBabyId,
+    };
+    await DB.upsertUser(updated);
+    setUser(toAppUser(updated));
   };
 
   const handleRegister = async (parentName: string, babyName: string, email: string, babyDob: string, password: string, researchConsent: boolean) => {
@@ -312,19 +427,23 @@ export default function App() {
           research_consent: researchConsent,
         });
       }
-      await DB.upsertUser({
+      const firstBaby: DB.Baby = { id: `baby_${Date.now()}`, name: babyName, dob: babyDob || undefined };
+      const cloudDbUser: DB.DbUser = {
         id: userId,
         name: parentName,
         email: clean,
         babyDob,
         babyName,
+        babies: [firstBaby],
+        activeBabyId: firstBaby.id,
         provider: 'email',
         createdAt: new Date().toISOString(),
         researchConsent,
         researchConsentAt: researchConsent ? new Date().toISOString() : undefined,
-      });
+      };
+      await DB.upsertUser(cloudDbUser);
       await DB.setCurrentEmail(clean);
-      setUser({ name: parentName, email: clean, babyDob, babyName });
+      setUser(toAppUser(cloudDbUser));
       setHistory([]);
       await emailService.sendWelcome(clean, parentName, 'email');
       goMain('home');
@@ -337,12 +456,15 @@ export default function App() {
       setRoute({ name: 'login' });
       return;
     }
+    const firstBabyLocal: DB.Baby = { id: `baby_${Date.now()}`, name: babyName, dob: babyDob || undefined };
     const newUser: import('./src/storage/db').DbUser = {
       id: String(Date.now()),
       name: parentName,
       email: clean,
       babyDob,
       babyName,
+      babies: [firstBabyLocal],
+      activeBabyId: firstBabyLocal.id,
       password,
       provider: 'email',
       createdAt: new Date().toISOString(),
@@ -351,7 +473,7 @@ export default function App() {
     };
     await DB.upsertUser(newUser);
     await DB.setCurrentEmail(clean);
-    setUser({ name: parentName, email: clean, babyDob, babyName });
+    setUser(toAppUser(newUser));
     setHistory([]);
     await emailService.sendWelcome(clean, parentName, 'email');
     goMain('home');
@@ -368,9 +490,12 @@ export default function App() {
   };
 
   const addHistory = async (entry: Omit<DiagnosisHistoryEntry, 'id' | 'date' | 'kind'> & { kind?: HistoryKind }) => {
+    const active = getActiveBabyOf(user);
     const newEntry: DiagnosisHistoryEntry = {
       kind: 'diagnosis',
       ...entry,
+      babyId: entry.babyId ?? active?.id,
+      babyName: entry.babyName ?? active?.name,
       id: String(Date.now()),
       date: formatDateTime(new Date()),
     };
@@ -398,7 +523,9 @@ export default function App() {
             cry_label: newEntry.cryLabel ?? null,
             cry_meaning: newEntry.cryMeaning ?? null,
             confidence: newEntry.confidence ?? null,
-          });
+            baby_id: newEntry.babyId ?? null,
+            baby_name: newEntry.babyName ?? null,
+          } as any);
         }
       } catch (e) {
         console.warn('[BabyOps] Gagal backup history ke cloud:', e);
@@ -408,12 +535,13 @@ export default function App() {
     try {
       const dbUser = user?.email ? await DB.findUserByEmail(user.email) : null;
       if (dbUser?.researchConsent) {
+        const activeBaby = DB.getActiveBaby(dbUser);
         await DB.addResearch({
           type: 'diagnosis',
           appVersion: '1.0.0',
           symptomIds: entry.symptomIds ?? [],
           condition: entry.conditionName,
-          babyAgeMonths: parseInt(getAgeMonths(dbUser.babyDob), 10) || 0,
+          babyAgeMonths: parseInt(getAgeMonths(activeBaby?.dob ?? dbUser.babyDob), 10) || 0,
         });
       }
     } catch (e) {
@@ -526,13 +654,41 @@ export default function App() {
     );
   }
 
-  const babyAge = getAgeMonths(user?.babyDob);
+  const activeBaby = getActiveBabyOf(user);
+  const babyAge = getAgeMonths(activeBaby?.dob ?? user?.babyDob);
+  const visibleHistory = activeBaby
+    ? history.filter((h) => !h.babyId || h.babyId === activeBaby.id)
+    : history;
   return wrapWeb(
     <ScreenView style={styles.safe}>
-      {route.tab === 'home' && <HomeScreen userName={user?.name} babyName={user?.babyName} babyAge={babyAge} history={history} onNavigate={(tab) => goMain(tab)} onRecord={() => setRoute({ name: 'record' })} />}
+      {route.tab === 'home' && (
+        <HomeScreen
+          userName={user?.name}
+          babyName={activeBaby?.name ?? user?.babyName}
+          babyAge={babyAge}
+          history={visibleHistory}
+          babies={user?.babies ?? []}
+          activeBabyId={activeBaby?.id}
+          onSelectBaby={handleSelectBaby}
+          onNavigate={(tab) => goMain(tab)}
+          onRecord={() => setRoute({ name: 'record' })}
+        />
+      )}
       {route.tab === 'diagnosis' && <DiagnosisScreen onSaveHistory={addHistory} />}
       {route.tab === 'education' && <EducationScreen />}
-      {route.tab === 'profile' && <ProfileScreen user={user} babyAge={babyAge} historyCount={history.length} onLogout={handleLogout} onLogin={() => setRoute({ name: 'login' })} onSave={handleSaveProfile} />}
+      {route.tab === 'profile' && (
+        <ProfileScreen
+          user={user}
+          babyAge={babyAge}
+          historyCount={visibleHistory.length}
+          onLogout={handleLogout}
+          onLogin={() => setRoute({ name: 'login' })}
+          onSave={handleSaveProfile}
+          onSelectBaby={handleSelectBaby}
+          onAddBaby={handleAddBaby}
+          onDeleteBaby={handleDeleteBaby}
+        />
+      )}
       <BottomNav
         active={route.tab}
         onChange={(tab) => goMain(tab)}

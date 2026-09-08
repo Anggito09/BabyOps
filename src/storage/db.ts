@@ -1,19 +1,61 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export interface Baby {
+  id: string;
+  name: string;
+  dob?: string; // YYYY-MM-DD
+  gender?: 'L' | 'P';
+}
+
 export interface DbUser {
   id: string;
   name: string;
   email: string;
   password?: string; // plain mock, jangan pakai di produksi
-  babyDob?: string; // YYYY-MM-DD
-  babyName?: string;
-  babyGender?: 'L' | 'P';
+  babyDob?: string; // LEGACY: single-bayi, dimigrasi otomatis ke babies[0]
+  babyName?: string; // LEGACY
+  babyGender?: 'L' | 'P'; // LEGACY
+  babies?: Baby[]; // multi-bayi (kembar): 1 akun parent bisa punya N bayi
+  activeBabyId?: string; // bayi yang sedang dipilih di switcher
   phone?: string;
   address?: string;
   provider: 'email' | 'google';
   createdAt: string;
   researchConsent?: boolean;
   researchConsentAt?: string;
+}
+
+/** Migrasi user lama (babyName/babyDob) ke babies[0]. Idempotent. */
+export function ensureBabies(user: DbUser): DbUser {
+  if (user.babies && user.babies.length > 0) {
+    if (!user.activeBabyId || !user.babies.some((b) => b.id === user.activeBabyId)) {
+      return { ...user, activeBabyId: user.babies[0].id };
+    }
+    return user;
+  }
+  if (user.babyName || user.babyDob) {
+    const first: Baby = {
+      id: `baby_${Date.now()}`,
+      name: user.babyName ?? 'Si Kecil',
+      dob: user.babyDob,
+      gender: user.babyGender,
+    };
+    return { ...user, babies: [first], activeBabyId: first.id };
+  }
+  return { ...user, babies: [], activeBabyId: undefined };
+}
+
+export function getBabies(user: DbUser | null | undefined): Baby[] {
+  if (!user) return [];
+  return ensureBabies(user).babies ?? [];
+}
+
+export function getActiveBaby(user: DbUser | null | undefined): Baby | null {
+  if (!user) return null;
+  const u = ensureBabies(user);
+  const list = u.babies ?? [];
+  if (list.length === 0) return null;
+  return list.find((b) => b.id === u.activeBabyId) ?? list[0];
 }
 
 export interface ResearchSample {
@@ -54,8 +96,17 @@ export async function upsertUser(user: DbUser): Promise<void> {
   const users = await loadUsers();
   const nEmail = norm(user.email);
   const idx = users.findIndex((u) => norm(u.email) === nEmail);
-  // simpan email selalu dalam bentuk trim+lowercase agar konsisten
-  const cleanUser = { ...user, email: nEmail };
+  // migrasi + sinkron legacy: babyName/babyDob selalu cerminkan bayi aktif
+  // agar kode lama (cloud backup, badge umur) tetap jalan.
+  const migrated = ensureBabies(user);
+  const active = getActiveBaby(migrated);
+  const cleanUser: DbUser = {
+    ...migrated,
+    email: nEmail,
+    babyName: active?.name ?? migrated.babyName,
+    babyDob: active?.dob ?? migrated.babyDob,
+    babyGender: active?.gender ?? migrated.babyGender,
+  };
   if (idx >= 0) users[idx] = { ...users[idx], ...cleanUser };
   else users.push(cleanUser);
   await saveUsers(users);
@@ -63,7 +114,8 @@ export async function upsertUser(user: DbUser): Promise<void> {
 
 export async function findUserByEmail(email: string): Promise<DbUser | null> {
   const users = await loadUsers();
-  return users.find((u) => norm(u.email) === norm(email)) ?? null;
+  const found = users.find((u) => norm(u.email) === norm(email)) ?? null;
+  return found ? ensureBabies(found) : null;
 }
 
 export async function setCurrentEmail(email: string | null) {

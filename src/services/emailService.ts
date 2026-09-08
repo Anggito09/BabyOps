@@ -15,15 +15,25 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  *             alur tetap bisa dites tanpa kirim email sungguhan.
  */
 
+// Fallback testing — dibalikin agar signup/reset otomatis ngirim tanpa set env.
+// Untuk launching nanti, ganti dengan env + rotate key.
+const FALLBACK = {
+  serviceId: 'service_sr5iopj',
+  welcomeTemplateId: 'template_n1v0fdd',
+  resetTemplateId: 'template_tvxav3c',
+  changedTemplateId: 'template_tvxav3c',
+  publicKey: 'R0yTEokuhB6QghgFm',
+};
+
 const CONFIG = {
-  serviceId: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID ?? '',
-  welcomeTemplateId: process.env.EXPO_PUBLIC_EMAILJS_WELCOME_TEMPLATE_ID ?? '',
-  resetTemplateId: process.env.EXPO_PUBLIC_EMAILJS_RESET_TEMPLATE_ID ?? '',
+  serviceId: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID || FALLBACK.serviceId,
+  welcomeTemplateId: process.env.EXPO_PUBLIC_EMAILJS_WELCOME_TEMPLATE_ID || FALLBACK.welcomeTemplateId,
+  resetTemplateId: process.env.EXPO_PUBLIC_EMAILJS_RESET_TEMPLATE_ID || FALLBACK.resetTemplateId,
   changedTemplateId:
-    process.env.EXPO_PUBLIC_EMAILJS_CHANGED_TEMPLATE_ID ??
-    process.env.EXPO_PUBLIC_EMAILJS_RESET_TEMPLATE_ID ??
-    '',
-  publicKey: process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY ?? '',
+    process.env.EXPO_PUBLIC_EMAILJS_CHANGED_TEMPLATE_ID ||
+    process.env.EXPO_PUBLIC_EMAILJS_RESET_TEMPLATE_ID ||
+    FALLBACK.changedTemplateId,
+  publicKey: process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY || FALLBACK.publicKey,
 };
 
 const isConfigured = () =>

@@ -43,7 +43,12 @@ create table if not exists public.history (
   created_at timestamptz default now()
 );
 
+-- multi-bayi (kembar): riwayat ditag milik bayi mana (aman untuk DB lama)
+alter table public.history add column if not exists baby_id text;
+alter table public.history add column if not exists baby_name text;
+
 create index if not exists history_user_idx on public.history (user_id, created_at desc);
+create index if not exists history_baby_idx on public.history (user_id, baby_id, created_at desc);
 
 -- ---- Row Level Security: user hanya bisa baca/tulis datanya sendiri ----
 alter table public.profiles enable row level security;

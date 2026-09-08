@@ -13,6 +13,9 @@ interface Props {
   babyName?: string;
   babyAge?: string;
   history?: DiagnosisHistoryEntry[];
+  babies?: Array<{ id: string; name: string }>;
+  activeBabyId?: string;
+  onSelectBaby?: (id: string) => void;
   onNavigate: (tab: TabKey) => void;
   onRecord: () => void;
 }
@@ -29,7 +32,7 @@ function FadeInRow({ index = 0, children }: { index?: number; children: React.Re
   return <Animated.View style={{ opacity, transform: [{ translateY: translate }] }}>{children}</Animated.View>;
 }
 
-export function HomeScreen({ userName, babyName, babyAge = '03', history = [], onNavigate, onRecord }: Props) {
+export function HomeScreen({ userName, babyName, babyAge = '03', history = [], babies = [], activeBabyId, onSelectBaby, onNavigate, onRecord }: Props) {
   const cap = (s?: string) => {
     const t = (s ?? '').trim();
     return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
@@ -86,6 +89,24 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], o
         <View style={styles.greetBlock}>
           <Text style={styles.hello}>Selamat pagi, Baby {babyDisplay}! ✨</Text>
           {parentDisplay ? <Text style={styles.parentName}>Orang tua: {parentDisplay}</Text> : null}
+          {babies.length > 1 ? (
+            <View style={styles.babySwitchRow}>
+              {babies.map((b) => {
+                const on = b.id === activeBabyId;
+                return (
+                  <Pressable
+                    key={b.id}
+                    onPress={() => onSelectBaby?.(b.id)}
+                    style={[styles.babyChip, on && styles.babyChipOn]}
+                  >
+                    <Text style={[styles.babyChipText, on && styles.babyChipTextOn]} numberOfLines={1}>
+                      {b.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
         </View>
 
         {/* White content card — rounded top seperti di screenshot */}
@@ -126,7 +147,7 @@ export function HomeScreen({ userName, babyName, babyAge = '03', history = [], o
                 <Text style={styles.historyTitle}>{h.conditionName}</Text>
                 <Text style={styles.historyBody} numberOfLines={2}>{h.description}</Text>
                 <Text style={styles.more}>
-                  {h.kind === 'cry' ? `Tangisan · keyakinan ${h.confidence ?? 0}%` : `${h.matchedSymptoms} gejala`} • {h.date} →
+                  {h.babyName ? `${h.babyName} • ` : ''}{h.kind === 'cry' ? `Tangisan · keyakinan ${h.confidence ?? 0}%` : `${h.matchedSymptoms} gejala`} • {h.date} →
                 </Text>
               </Pressable>
             ))
@@ -322,6 +343,11 @@ const styles = StyleSheet.create({
   greetBlock: { paddingHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.lg },
   hello: { color: colors.white, fontSize: 20, fontWeight: '900' },
   parentName: { color: '#CBEFFF', fontSize: 12, fontWeight: '700', marginTop: 4 },
+  babySwitchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  babyChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
+  babyChipOn: { backgroundColor: colors.white, borderColor: colors.white },
+  babyChipText: { color: '#E9F7FF', fontSize: 12, fontWeight: '800', maxWidth: 120 },
+  babyChipTextOn: { color: colors.primary },
   contentCard: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 28,
