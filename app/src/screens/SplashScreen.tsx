@@ -53,7 +53,7 @@ export function SplashScreen({ onFinish }: Props) {
         ))}
       </Animated.View>
 
-      <Text style={styles.credit}>by Anggito</Text>
+      <Text style={styles.credit}>BabyOps</Text>
     </LinearGradient>
   );
 }

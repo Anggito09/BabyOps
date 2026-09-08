@@ -90,7 +90,7 @@ export function OnboardingScreen({ onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingTop: 54 },
+  root: { flex: 1, paddingTop: 54, paddingBottom: 12, minHeight: 0 as any },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   },
   logoImage: { width: 110, height: 28, tintColor: colors.white },
   skipText: { color: colors.white, fontSize: 13, fontWeight: '700' },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: spacing.lg, gap: 8 },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: spacing.md, gap: 8, minHeight: 0 as any },
   bubble: {
     backgroundColor: colors.white,
     paddingHorizontal: 22,
@@ -141,7 +141,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 34,
     paddingHorizontal: spacing.xl,
     paddingTop: 22,
-    paddingBottom: 28,
+    paddingBottom: 36,
+    marginHorizontal: 12,
+    marginBottom: 32,
+    borderRadius: 24,
   },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 14 },
   dot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: '#CFE0E7' },

@@ -94,7 +94,7 @@ export function LoginScreen({ onLogin, onGoRegister, onForgot, initialError = ''
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, width: '100%' as any, height: '100%' as any, minHeight: 844 as any, display: 'flex' as any, flexDirection: 'column' as any },
   scroll: { paddingTop: 48, paddingBottom: 32, alignItems: 'center' },
   logo: { width: 160, height: 42, tintColor: colors.white },
   hero: { width: 180, height: 150, marginTop: 8 },

@@ -28,7 +28,15 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "BabyOps",
+      "shortName": "BabyOps",
+      "backgroundColor": "#05497B",
+      "themeColor": "#05497B",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/",
+      "scope": "/"
     },
     "plugins": [
       "expo-font",

@@ -20,6 +20,18 @@ import { colors } from './src/theme/tokens';
 import { CryPrediction } from './src/model/cryClassifier';
 import * as DB from './src/storage/db';
 import { emailService } from './src/services/emailService';
+// Cloud (Supabase): aktif hanya di APK native + env terisi. Web/Vercel -> lokal saja.
+import {
+  cloudActive,
+  cloudGetSessionUser,
+  cloudLoadHistory,
+  cloudLoadProfile,
+  cloudPushHistory,
+  cloudSignIn,
+  cloudSignOut,
+  cloudSignUp,
+  cloudUpsertProfile,
+} from './src/services/cloudDb';
 
 function formatDateTime(d: Date): string {
   const date = d.toLocaleDateString('id-ID');
@@ -93,10 +105,55 @@ export default function App() {
     doc.head.appendChild(el);
   }, []);
 
-  // Load dari AsyncStorage — data tidak hilang walau app restart
+  // Load sesi: cloud dulu (APK), fallback AsyncStorage lokal (web/offline)
   useEffect(() => {
     (async () => {
       try {
+        if (cloudActive) {
+          const session = await cloudGetSessionUser();
+          if (session) {
+            const [profile, cloudHist] = await Promise.all([
+              cloudLoadProfile(),
+              cloudLoadHistory(),
+            ]);
+            const name = profile?.name || session.email.split('@')[0] || 'Orang Tua';
+            setUser({
+              name,
+              email: session.email,
+              babyDob: profile?.baby_dob ?? undefined,
+              babyName: profile?.baby_name ?? undefined,
+              babyGender: profile?.baby_gender ?? undefined,
+              phone: profile?.phone ?? undefined,
+              address: profile?.address ?? undefined,
+            });
+            if (cloudHist.length > 0) {
+              setHistory(
+                cloudHist.map((r) => ({
+                  id: r.id ?? String(Date.now()),
+                  kind: (r.kind === 'cry' ? 'cry' : 'diagnosis') as HistoryKind,
+                  conditionName: r.condition_name,
+                  description: r.description ?? '',
+                  severity: r.severity ?? 'ringan',
+                  emoji: r.emoji ?? '📝',
+                  date: r.entry_date,
+                  matchedSymptoms: r.matched_symptoms ?? 0,
+                  symptomIds: r.symptom_ids ?? undefined,
+                  symptomNames: r.symptom_names ?? undefined,
+                  guidance: r.guidance ?? undefined,
+                  doctorWhen: r.doctor_when ?? undefined,
+                  cryLabel: r.cry_label ?? undefined,
+                  cryMeaning: r.cry_meaning ?? undefined,
+                  confidence: r.confidence ?? undefined,
+                }))
+              );
+            } else {
+              const h = await DB.loadHistory(session.email);
+              setHistory(h);
+            }
+            setRoute({ name: 'main', tab: 'home' });
+            return;
+          }
+        }
         const email = await DB.getCurrentEmail();
         if (email) {
           const dbUser = await DB.findUserByEmail(email);
@@ -122,7 +179,73 @@ export default function App() {
   const goMain = (tab: TabKey = 'home') => setRoute({ name: 'main', tab });
 
   const handleLogin = async (email: string, password: string) => {
-    const dbUser = await DB.findUserByEmail(email);
+    const clean = email.trim().toLowerCase();
+    // 1) Cloud dulu (APK + env terisi)
+    if (cloudActive) {
+      const res = await cloudSignIn(clean, password);
+      if (res.ok && res.userId) {
+        const profile = await cloudLoadProfile();
+        const name = profile?.name || clean.split('@')[0] || 'Orang Tua';
+        await DB.upsertUser({
+          id: res.userId,
+          name,
+          email: clean,
+          babyDob: profile?.baby_dob ?? undefined,
+          babyName: profile?.baby_name ?? undefined,
+          babyGender: (profile?.baby_gender as 'L' | 'P' | undefined) ?? undefined,
+          phone: profile?.phone ?? undefined,
+          address: profile?.address ?? undefined,
+          provider: 'email',
+          createdAt: new Date().toISOString(),
+          researchConsent: profile?.research_consent ?? false,
+        });
+        await DB.setCurrentEmail(clean);
+        setUser({
+          name,
+          email: clean,
+          babyDob: profile?.baby_dob ?? undefined,
+          babyName: profile?.baby_name ?? undefined,
+          babyGender: profile?.baby_gender ?? undefined,
+          phone: profile?.phone ?? undefined,
+          address: profile?.address ?? undefined,
+        });
+        const cloudHist = await cloudLoadHistory();
+        if (cloudHist.length > 0) {
+          setHistory(
+            cloudHist.map((r) => ({
+              id: r.id ?? String(Date.now()),
+              kind: (r.kind === 'cry' ? 'cry' : 'diagnosis') as HistoryKind,
+              conditionName: r.condition_name,
+              description: r.description ?? '',
+              severity: r.severity ?? 'ringan',
+              emoji: r.emoji ?? '📝',
+              date: r.entry_date,
+              matchedSymptoms: r.matched_symptoms ?? 0,
+              symptomIds: r.symptom_ids ?? undefined,
+              symptomNames: r.symptom_names ?? undefined,
+              guidance: r.guidance ?? undefined,
+              doctorWhen: r.doctor_when ?? undefined,
+              cryLabel: r.cry_label ?? undefined,
+              cryMeaning: r.cry_meaning ?? undefined,
+              confidence: r.confidence ?? undefined,
+            }))
+          );
+        } else {
+          const h = await DB.loadHistory(clean);
+          setHistory(h);
+        }
+        goMain('home');
+        return;
+      }
+      // cloud aktif tapi gagal (password salah / belum daftar) -> tampilkan pesan, jangan fallback lokal
+      if (res.reason === 'error') {
+        setLoginError(res.message ?? 'Login gagal. Coba lagi.');
+        setRoute({ name: 'login' });
+        return;
+      }
+    }
+    // 2) Fallback lokal (web/Vercel, atau cloud mati)
+    const dbUser = await DB.findUserByEmail(clean);
     if (!dbUser) {
       setLoginError('Akun tidak ditemukan. Silakan Sign Up terlebih dahulu.');
       setRoute({ name: 'login' });
@@ -151,11 +274,63 @@ export default function App() {
     if (!dbUser) return;
     const updated = { ...dbUser, ...data };
     await DB.upsertUser(updated as any);
+    // dual-write ke cloud (APK): password TIDAK pernah dikirim, hanya profil
+    if (cloudActive) {
+      const session = await cloudGetSessionUser();
+      if (session) {
+        await cloudUpsertProfile({
+          user_id: session.id,
+          name: updated.name,
+          baby_name: (updated as any).babyName ?? null,
+          baby_dob: updated.babyDob || null,
+          baby_gender: (updated as any).babyGender ?? null,
+          phone: (updated as any).phone ?? null,
+          address: (updated as any).address ?? null,
+        });
+      }
+    }
     setUser({ name: updated.name, email: updated.email, babyDob: updated.babyDob, babyName: (updated as any).babyName, babyGender: (updated as any).babyGender, phone: (updated as any).phone, address: (updated as any).address });
   };
 
   const handleRegister = async (parentName: string, babyName: string, email: string, babyDob: string, password: string, researchConsent: boolean) => {
     const clean = email.trim().toLowerCase();
+    // 1) Cloud dulu (APK + env terisi): Supabase Auth jadi sumber kebenaran password
+    if (cloudActive) {
+      const res = await cloudSignUp(clean, password);
+      if (!res.ok) {
+        setLoginError(res.reason === 'error' ? (res.message ?? 'Registrasi gagal. Coba lagi.') : 'Registrasi gagal. Coba lagi.');
+        setRoute({ name: 'register' });
+        return;
+      }
+      const userId = res.userId ?? clean;
+      if (res.userId) {
+        await cloudUpsertProfile({
+          user_id: res.userId,
+          name: parentName,
+          baby_name: babyName,
+          baby_dob: babyDob || null,
+          research_consent: researchConsent,
+        });
+      }
+      await DB.upsertUser({
+        id: userId,
+        name: parentName,
+        email: clean,
+        babyDob,
+        babyName,
+        provider: 'email',
+        createdAt: new Date().toISOString(),
+        researchConsent,
+        researchConsentAt: researchConsent ? new Date().toISOString() : undefined,
+      });
+      await DB.setCurrentEmail(clean);
+      setUser({ name: parentName, email: clean, babyDob, babyName });
+      setHistory([]);
+      await emailService.sendWelcome(clean, parentName, 'email');
+      goMain('home');
+      return;
+    }
+    // 2) Fallback lokal (web/Vercel, atau cloud mati)
     const existing = await DB.findUserByEmail(clean);
     if (existing) {
       setLoginError('Email sudah terdaftar. Silakan Sign In.');
@@ -185,6 +360,7 @@ export default function App() {
 
 
   const handleLogout = async () => {
+    if (cloudActive) await cloudSignOut();
     await DB.setCurrentEmail(null);
     setUser(null);
     setHistory([]);
@@ -201,6 +377,33 @@ export default function App() {
     const next = [newEntry, ...history].slice(0, 20);
     setHistory(next);
     if (user?.email) await DB.saveHistory(user.email, next);
+    // Backup cloud (APK): riwayat ikut tersimpan di Supabase agar tidak hilang ganti HP
+    if (cloudActive) {
+      try {
+        const session = await cloudGetSessionUser();
+        if (session) {
+          await cloudPushHistory({
+            user_id: session.id,
+            kind: newEntry.kind,
+            condition_name: newEntry.conditionName,
+            description: newEntry.description,
+            severity: newEntry.severity,
+            emoji: newEntry.emoji,
+            entry_date: newEntry.date,
+            matched_symptoms: newEntry.matchedSymptoms,
+            symptom_ids: newEntry.symptomIds ?? null,
+            symptom_names: newEntry.symptomNames ?? null,
+            guidance: newEntry.guidance ?? null,
+            doctor_when: newEntry.doctorWhen ?? null,
+            cry_label: newEntry.cryLabel ?? null,
+            cry_meaning: newEntry.cryMeaning ?? null,
+            confidence: newEntry.confidence ?? null,
+          });
+        }
+      } catch (e) {
+        console.warn('[BabyOps] Gagal backup history ke cloud:', e);
+      }
+    }
     // Riset opt-in: simpan gejala + hasil diagnosa anonim (TANPA nama/email)
     try {
       const dbUser = user?.email ? await DB.findUserByEmail(user.email) : null;

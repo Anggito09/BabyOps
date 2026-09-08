@@ -11,11 +11,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  */
 
 const CONFIG = {
-  serviceId: 'service_dsvufq9',
-  welcomeTemplateId: 'template_59dazod',
-  resetTemplateId: 'template_4jbxtab',
-  changedTemplateId: 'template_4jbxtab',
-  publicKey: '4hVhSvTYRDSSasM3Z',
+  serviceId: 'service_sr5iopj',
+  welcomeTemplateId: 'template_n1v0fdd',
+  resetTemplateId: 'template_tvxav3c',
+  changedTemplateId: 'template_tvxav3c',
+  publicKey: 'R0yTEokuhB6QghgFm',
 };
 
 const isConfigured = () =>
@@ -43,15 +43,26 @@ async function sendViaEmailJS(templateId: string, params: Record<string, string>
         template_params: params,
       }),
     });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.warn(`[BabyOps EmailJS ${res.status}] ${templateId}: ${text}`);
+    }
     return res.ok;
-  } catch {
+  } catch (e) {
+    console.warn('[BabyOps EmailJS network gagal]:', e);
     return false;
   }
 }
 
 async function deliver(templateId: string, to: string, subject: string, body: string, params: Record<string, string>) {
+  const cleanTo = (to ?? '').trim();
+  if (!cleanTo.includes('@')) {
+    console.warn(`[BabyOps Email] alamat tujuan kosong/tidak valid (${templateId}), masuk outbox.`);
+    await pushOutbox({ to: cleanTo || '(kosong)', subject, body });
+    return false;
+  }
   if (isConfigured()) {
-    const ok = await sendViaEmailJS(templateId, { to_email: to, subject, ...params });
+    const ok = await sendViaEmailJS(templateId, { to_email: cleanTo, subject, ...params });
     if (ok) return true;
   }
   await pushOutbox({ to, subject, body });

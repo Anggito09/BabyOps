@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, gradients } from '../theme/tokens';
 import { emailService } from '../services/emailService';
 import * as DB from '../storage/db';
+// Cloud (Supabase): reset via OTP email saat aktif di APK. Web/lokal -> flow demo lama.
+import { cloudActive, cloudSendOtp, cloudUpdatePassword, cloudVerifyOtp } from '../services/cloudDb';
 
 interface Props {
   onBack: () => void;
@@ -26,6 +28,18 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
   const requestCode = async () => {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed.includes('@')) { setError('Email tidak valid.'); return; }
+    // Mode cloud (APK): OTP 6 digit dikirim Supabase Auth ke email asli
+    if (cloudActive) {
+      const ok = await cloudSendOtp(trimmed);
+      if (!ok) {
+        setError('Email tidak terdaftar di BabyOps atau pengiriman gagal.');
+        return;
+      }
+      setInfo(`Kode 6 digit dikirim ke ${trimmed}. Cek inbox/spam.`);
+      setError('');
+      setStep(2);
+      return;
+    }
     const user = await DB.findUserByEmail(trimmed);
     if (!user) {
       setError('Email tidak terdaftar di BabyOps.');
@@ -41,7 +55,18 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
     setStep(2);
   };
 
-  const verifyCode = () => {
+  const verifyCode = async () => {
+    // Mode cloud (APK): verifikasi OTP via Supabase -> sesi login terbentuk
+    if (cloudActive) {
+      const ok = await cloudVerifyOtp(email.trim().toLowerCase(), code);
+      if (!ok) {
+        setError('Kode salah atau kedaluwarsa. Minta kode baru.');
+        return;
+      }
+      setError('');
+      setStep(3);
+      return;
+    }
     if (code.trim() !== expectedCode) {
       setError('Kode salah. Periksa kembali email Anda.');
       return;
@@ -54,6 +79,17 @@ export function ForgotPasswordScreen({ onBack, onResetSuccess }: Props) {
     if (newPass.length < 6) { setError('Password minimal 6 karakter.'); return; }
     if (newPass !== confirm) { setError('Konfirmasi password tidak cocok.'); return; }
     const trimmed = email.trim().toLowerCase();
+    // Mode cloud (APK): update password akun Supabase (sesi dari OTP tadi)
+    if (cloudActive) {
+      const ok = await cloudUpdatePassword(newPass);
+      if (!ok) {
+        setError('Gagal menyimpan password. Minta kode baru dan ulangi.');
+        return;
+      }
+      setError('');
+      onResetSuccess(trimmed);
+      return;
+    }
     const user = await DB.findUserByEmail(trimmed);
     if (user) {
       await DB.upsertUser({ ...user, password: newPass });

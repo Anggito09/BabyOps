@@ -302,7 +302,7 @@ export function ProfileScreen({ user, babyAge = '03', historyCount = 0, onLogout
                   <Image source={require('../../assets/onboarding-mother.png')} style={styles.privacyImg} resizeMode="contain" />
                   <Text style={styles.privacyTitle}>Aman & Lokal</Text>
                 </View>
-                <Text style={styles.hint}>• Data disimpan di <Text style={{ fontWeight: '800' }}>AsyncStorage</Text> HP, tidak ke server.{'\n'}• Tidak ada tracking. Hapus dengan Keluar + hapus app.{'\n'}• BabyOps tidak mengirim data bayi ke internet.</Text>
+                <Text style={styles.hint}>• Data tersimpan di HP + ter-backup aman di cloud agar tidak hilang ganti HP.{'\n'}• Rekaman suara hanya diproses lokal, tidak pernah diunggah.{'\n'}• Tidak ada tracking iklan. Hapus data via babyops.app@gmail.com.</Text>
                 <View style={styles.privacyBadge}>
                   <Ionicons name="lock-closed" size={14} color={colors.success} />
                   <Text style={styles.privacyBadgeText}>Terenkripsi lokal</Text>

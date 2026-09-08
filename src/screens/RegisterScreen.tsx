@@ -6,13 +6,14 @@ import { CalendarPicker } from '../components/CalendarPicker';
 import { colors, gradients } from '../theme/tokens';
 
 const POLICY_SECTIONS: Array<{ title: string; body: string }> = [
-  { title: '1. Data Tersimpan Lokal', body: 'Semua data akun, profil bayi, dan riwayat screening tersimpan di HP/browser Anda (AsyncStorage). BabyOps tidak memiliki server penyimpanan data pengguna, sehingga data tidak otomatis terkirim ke mana pun.' },
-  { title: '2. Tidak Diperjualbelikan', body: 'BabyOps TIDAK memperjualbelikan, menyewakan, atau membagikan data pribadi Anda (nama orang tua, nama bayi, email, tanggal lahir) ke pihak ketiga mana pun, untuk tujuan apa pun.' },
-  { title: '3. Data Riset Anonim (Opsional)', body: 'Jika Anda mencentang persetujuan riset, app menyimpan paket anonim di HP Anda: vektor fitur suara MFCC (bukan rekaman audio), daftar gejala, hasil diagnosa, dan umur bayi dalam bulan. TANPA nama, email, tanggal lahir, dan TANPA audio mentah. Data hanya keluar dari HP jika Anda menekan Export lalu mengirimkannya sendiri.' },
-  { title: '4. Hak Anda', body: 'Anda dapat menarik persetujuan riset kapan saja, menghapus sampel yang tersimpan, dan menghapus akun beserta seluruh datanya dengan keluar + menghapus data aplikasi.' },
-  { title: '5. Bukan Diagnosis Medis', body: 'Hasil screening gejala dan prediksi tangisan adalah panduan awal dan edukasi, BUKAN diagnosis medis. Selalu konsultasikan kondisi bayi ke dokter, bidan, atau fasilitas kesehatan.' },
-  { title: '6. Keamanan Akun', body: 'Jaga kerahasiaan password Anda. Jangan gunakan password yang sama dengan layanan lain. BabyOps tidak akan pernah meminta password Anda melalui email atau pesan.' },
-  { title: '7. Kontak', body: 'Pertanyaan soal privasi dan data dapat disampaikan melalui menu bantuan di aplikasi atau email resmi BabyOps yang tertera di halaman profil.' },
+  { title: '1. Data yang Disimpan', body: 'Data akun (nama, email), profil bayi (nama, tanggal lahir, jenis kelamin), dan riwayat screening tersimpan di perangkat Anda dan ter-backup aman di cloud (Supabase) agar tidak hilang saat ganti HP. Password disimpan ter-hash dan tidak bisa dibaca siapa pun.' },
+  { title: '2. Rekaman Audio Lokal', body: 'Fitur analisis tangisan memakai mikrofon. Rekaman HANYA diproses di HP Anda (ekstraksi fitur MFCC + klasifikasi) dan TIDAK pernah diunggah ke server mana pun.' },
+  { title: '3. Tidak Diperjualbelikan', body: 'BabyOps TIDAK memperjualbelikan, menyewakan, atau membagikan data pribadi Anda (nama orang tua, nama bayi, email, tanggal lahir) ke pihak ketiga mana pun, untuk tujuan apa pun.' },
+  { title: '4. Data Riset Anonim (Opsional)', body: 'Jika Anda mencentang persetujuan riset, app menyimpan paket anonim: vektor fitur suara MFCC (bukan rekaman audio), daftar gejala, hasil diagnosa, dan umur bayi dalam bulan. TANPA nama, email, tanggal lahir, dan TANPA audio mentah.' },
+  { title: '5. Hak Anda', body: 'Anda dapat menarik persetujuan riset kapan saja, menghapus sampel yang tersimpan, dan menghapus akun beserta seluruh datanya. Hubungi babyops.app@gmail.com untuk permintaan penghapusan data.' },
+  { title: '6. Bukan Diagnosis Medis', body: 'Hasil screening gejala dan prediksi tangisan adalah panduan awal dan edukasi, BUKAN diagnosis medis. Selalu konsultasikan kondisi bayi ke dokter, bidan, atau fasilitas kesehatan.' },
+  { title: '7. Keamanan Akun', body: 'Jaga kerahasiaan password Anda. Jangan gunakan password yang sama dengan layanan lain. BabyOps tidak akan pernah meminta password Anda melalui email atau pesan.' },
+  { title: '8. Kebijakan Lengkap', body: 'Kebijakan privasi lengkap tersedia di halaman Privacy Policy BabyOps (URL tercantum di Play Store).' },
 ];
 
 interface Props {

@@ -13,16 +13,18 @@ export function SplashScreen({ onFinish }: Props) {
   const dots = useRef([new Animated.Value(0.3), new Animated.Value(0.3), new Animated.Value(0.3)]).current;
 
   useEffect(() => {
+    // web tidak support useNativeDriver:true untuk semua props -> pakai false agar tidak blank
+    const useNative = false;
     Animated.parallel([
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 5 }),
-      Animated.timing(fade, { toValue: 1, duration: 700, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: useNative, friction: 5 }),
+      Animated.timing(fade, { toValue: 1, duration: 700, useNativeDriver: useNative }),
     ]).start();
 
     const loops = dots.map((d) =>
       Animated.loop(
         Animated.sequence([
-          Animated.timing(d, { toValue: 1, duration: 420, useNativeDriver: true }),
-          Animated.timing(d, { toValue: 0.3, duration: 420, useNativeDriver: true }),
+          Animated.timing(d, { toValue: 1, duration: 420, useNativeDriver: useNative }),
+          Animated.timing(d, { toValue: 0.3, duration: 420, useNativeDriver: useNative }),
         ])
       )
     );
@@ -53,7 +55,7 @@ export function SplashScreen({ onFinish }: Props) {
         ))}
       </Animated.View>
 
-      <Text style={styles.credit}>by Anggito</Text>
+      <Text style={styles.credit}>BabyOps</Text>
     </LinearGradient>
   );
 }
@@ -61,6 +63,9 @@ export function SplashScreen({ onFinish }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    width: '100%' as any,
+    height: '100%' as any,
+    minHeight: 0 as any,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xl,
